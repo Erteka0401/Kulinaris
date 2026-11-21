@@ -2,18 +2,14 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>Kulinaris – Installierbarer KI-Wochenplaner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#4A7C59" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Kulinaris" />
-  <link id="pwa-manifest-link" rel="manifest" />
-  <link id="pwa-apple-icon" rel="apple-touch-icon" />
+  <title>Kulinaris – KI-Wochenplaner & Einkaufsliste</title>
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Fraunces & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -60,7 +56,6 @@
     h1, h2, .font-display {
       font-family: 'Fraunces', serif;
     }
-    /* Custom Range Slider */
     input[type="range"].kulinaris-slider {
       -webkit-appearance: none;
       appearance: none;
@@ -107,73 +102,63 @@
 <body class="min-h-screen flex flex-col antialiased selection:bg-sage-200 selection:text-sage-700">
 
   <!-- ==================== STICKY HEADER ==================== -->
-  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200">
-    <div class="max-w-6xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3 cursor-pointer group" id="header-brand">
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200/80">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 cursor-pointer group" id="header-brand">
         <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-sage-500 to-sage-700 text-white flex items-center justify-center font-display text-xl font-bold shadow-sm group-hover:scale-105 transition">
           K
         </div>
         <div>
           <div class="flex items-center gap-2">
             <span class="font-display font-bold text-xl sm:text-2xl text-stone-900 tracking-tight">Kulinaris</span>
-            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-700">KI-App</span>
+            <span class="hidden sm:inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-700">KI-Wochenplaner</span>
           </div>
-          <p class="hidden sm:block text-xs text-stone-500">Installierbarer Wochenplaner, Resteverwertung & Einkaufsliste</p>
+          <p class="hidden md:block text-xs text-stone-500">Persönliche Essensplanung, Resteverwertung & Einkaufsliste</p>
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2" id="header-actions">
-        <!-- API-Key Status Button (immer sichtbar) -->
-        <button type="button" id="btn-open-apikey" class="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold px-3.5 py-2 rounded-xl border border-stone-300 bg-white text-stone-800 hover:bg-stone-50 transition shadow-2xs">
-          <span id="apikey-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <button type="button" id="btn-open-apikey" class="flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl border border-stone-300 bg-white text-stone-700 hover:bg-stone-50 transition">
+          <span id="apikey-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
           <span>🔑 API-Key</span>
         </button>
-
-        <!-- Install App Button -->
-        <button type="button" id="btn-install-app" class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3.5 py-2 rounded-xl border border-sage-300 bg-sage-50 text-sage-700 hover:bg-sage-100 transition">
-          <span>📲 App installieren</span>
+        <button type="button" id="btn-install-pwa" class="hidden text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl bg-terracotta-500 text-white hover:bg-terracotta-600 transition shadow-xs">
+          📲 Installieren
         </button>
-
-        <button type="button" id="btn-open-wizard" style="display: none;" class="text-xs sm:text-sm font-semibold px-3.5 py-2 rounded-xl border border-stone-300 bg-white text-stone-700 hover:bg-stone-50 transition">
-          ⚙️ Einstellungen
+        <button type="button" id="btn-open-wizard" class="hidden text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl border border-stone-300 bg-white text-stone-700 hover:bg-stone-50 transition">
+          ⚙️ Plan-Setup
         </button>
-        <button type="button" id="btn-open-share" style="display: none;" class="text-xs sm:text-sm font-semibold px-3.5 py-2 rounded-xl bg-sage-500 text-white hover:bg-sage-600 transition shadow-sm">
-          🔗 Woche teilen
+        <button type="button" id="btn-open-share" class="hidden text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl bg-sage-500 text-white hover:bg-sage-600 transition shadow-xs">
+          🔗 Teilen
         </button>
       </div>
     </div>
   </header>
 
-  <!-- ==================== API-KEY HINWEIS BANNER ==================== -->
-  <div id="apikey-missing-banner" class="bg-amber-50 border-b border-amber-200 px-4 py-2.5">
+  <!-- ==================== API KEY MISSING BANNER ==================== -->
+  <div id="apikey-banner" class="bg-amber-50 border-b border-amber-200 px-4 py-2.5">
     <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
-      <div class="flex items-center gap-2 text-amber-900">
-        <span>🔑</span>
-        <span><strong>Hinweis:</strong> Hinterlege deinen kostenlosen <strong>Google Gemini API-Key</strong>, um live individuelle KI-Rezepte und Food-Fotos zu generieren.</span>
-      </div>
-      <button type="button" id="btn-banner-apikey" class="px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold text-xs hover:bg-amber-700 transition">
-        Jetzt API-Key eingeben
-      </button>
+      <p class="text-amber-900 font-medium">🔑 Hinterlege deinen kostenlosen <strong>Google Gemini API-Key</strong>, damit Kulinaris deine Rezepte live generiert.</p>
+      <button type="button" id="btn-banner-apikey" class="px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold text-xs hover:bg-amber-700 transition">Key jetzt eintragen</button>
     </div>
   </div>
 
   <!-- ==================== SHARED PLAN BANNER ==================== -->
-  <div id="shared-plan-banner" style="display: none;" class="bg-terracotta-500 text-white px-4 py-3 shadow-md">
+  <div id="shared-plan-banner" class="hidden bg-terracotta-500 text-white px-4 py-3 shadow-md">
     <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
-      <p class="text-sm font-medium">📩 Dir wurde ein fertiger Wochenplan über einen Link geteilt! Möchtest du ihn übernehmen?</p>
+      <p class="text-sm font-medium">📩 Dir wurde ein fertiger Wochenplan geteilt! Möchtest du ihn übernehmen?</p>
       <div class="flex items-center gap-2">
-        <button type="button" id="btn-accept-shared" class="px-3.5 py-1.5 bg-white text-terracotta-600 font-bold text-xs rounded-xl shadow-sm hover:bg-stone-100 transition">Plan übernehmen</button>
-        <button type="button" id="btn-dismiss-shared" class="px-3 py-1.5 bg-terracotta-600 text-white text-xs font-semibold rounded-xl hover:bg-terracotta-500 transition">Verwerfen</button>
+        <button type="button" id="btn-accept-shared" class="px-3.5 py-1.5 bg-white text-terracotta-600 font-bold text-xs rounded-xl shadow-sm hover:bg-stone-100">Plan übernehmen</button>
+        <button type="button" id="btn-dismiss-shared" class="px-3 py-1.5 bg-terracotta-600 text-white text-xs font-semibold rounded-xl hover:bg-terracotta-500">Verwerfen</button>
       </div>
     </div>
   </div>
 
   <!-- ==================== MAIN CONTENT ==================== -->
-  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 sm:py-9">
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 sm:py-8">
 
     <!-- ==================== 5-STUFIGER ONBOARDING-WIZARD ==================== -->
     <section id="wizard-view" class="max-w-3xl mx-auto fade-in">
-      <!-- Progress Header -->
       <div class="mb-6">
         <div class="flex items-center justify-between text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
           <span id="wizard-step-label">Schritt 1 von 5: Budget, Haushalt & Supermärkte</span>
@@ -182,51 +167,48 @@
         <div class="w-full h-2.5 bg-stone-200 rounded-full overflow-hidden">
           <div id="wizard-progress-bar" class="h-full bg-sage-500 transition-all duration-300 rounded-full" style="width: 20%;"></div>
         </div>
-        <!-- Step Pills -->
         <div class="grid grid-cols-5 gap-1.5 mt-3">
           <button type="button" data-goto-step="1" class="step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-sage-500 text-white truncate transition">1. Budget</button>
-          <button type="button" data-goto-step="2" class="step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-700 truncate transition">2. Ernährung</button>
-          <button type="button" data-goto-step="3" class="step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-700 truncate transition">3. No-Gos</button>
-          <button type="button" data-goto-step="4" class="step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-700 truncate transition">4. Küche & Reste</button>
-          <button type="button" data-goto-step="5" class="step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-700 truncate transition">5. Tage & Ziele</button>
+          <button type="button" data-goto-step="2" class="step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-600 truncate transition">2. Ernährung</button>
+          <button type="button" data-goto-step="3" class="step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-600 truncate transition">3. No-Gos</button>
+          <button type="button" data-goto-step="4" class="step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-600 truncate transition">4. Küche & Reste</button>
+          <button type="button" data-goto-step="5" class="step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-600 truncate transition">5. Tage & Ziele</button>
         </div>
       </div>
 
       <!-- STEP 1: BUDGET, HOUSEHOLD & SUPERMARKETS -->
-      <div id="step-1" class="wizard-step bg-white rounded-3xl shadow-sm border border-stone-200 p-6 sm:p-8 space-y-7">
+      <div id="step-1" class="wizard-step bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-7">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-sage-100 text-sage-700 mb-2">Grundlagen</span>
           <h1 class="text-2xl sm:text-3xl font-bold text-stone-900">Budget, Haushalt & Supermärkte</h1>
           <p class="text-stone-600 text-sm mt-1">Lege fest, wie viel du pro Woche ausgeben möchtest, für wen gekocht wird und wo du einkaufst.</p>
         </div>
 
-        <!-- Budget Slider + Stepper + Live Per-Person Calculation -->
-        <div class="p-5 sm:p-6 rounded-2xl bg-sage-50 border border-sage-200 space-y-4">
+        <div class="p-5 sm:p-6 rounded-2xl bg-sage-50/90 border border-sage-200 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <label for="slider-budget" class="block text-sm font-bold text-stone-800">Wochenbudget für Lebensmittel</label>
               <span id="budget-category-badge" class="inline-block mt-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sage-200 text-sage-700">Ausgewogen & Alltagstauglich</span>
             </div>
             <div class="flex items-center gap-2">
-              <button type="button" id="btn-budget-minus" class="w-10 h-10 rounded-xl bg-white border border-stone-300 font-bold text-lg text-stone-700 hover:bg-stone-100 active:scale-95 transition shadow-sm">−</button>
-              <div class="flex items-baseline bg-white border border-sage-300 rounded-xl px-4 py-1.5 shadow-sm">
+              <button type="button" id="btn-budget-minus" class="w-10 h-10 rounded-xl bg-white border border-stone-300 font-bold text-lg text-stone-700 hover:bg-stone-100 active:scale-95 transition">−</button>
+              <div class="flex items-baseline bg-white border border-sage-300 rounded-xl px-4 py-1.5">
                 <span id="display-budget" class="text-2xl sm:text-3xl font-display font-bold text-sage-700 tabular-nums">75</span>
                 <span class="text-lg font-bold text-sage-600 ml-1">€</span>
               </div>
-              <button type="button" id="btn-budget-plus" class="w-10 h-10 rounded-xl bg-white border border-stone-300 font-bold text-lg text-stone-700 hover:bg-stone-100 active:scale-95 transition shadow-sm">+</button>
+              <button type="button" id="btn-budget-plus" class="w-10 h-10 rounded-xl bg-white border border-stone-300 font-bold text-lg text-stone-700 hover:bg-stone-100 active:scale-95 transition">+</button>
             </div>
           </div>
 
           <input type="range" id="slider-budget" class="kulinaris-slider" min="20" max="300" step="5" value="75" />
 
-          <div class="flex flex-wrap items-center justify-between text-xs text-stone-600 pt-2 border-t border-sage-200 gap-2">
+          <div class="flex flex-wrap items-center justify-between text-xs text-stone-600 pt-2 border-t border-sage-200/80 gap-2">
             <span>20 € (Minimal)</span>
             <span class="font-semibold text-sage-700">≈ <span id="display-budget-per-person" class="tabular-nums">5,36</span> € pro Person / Tag</span>
             <span>300 € (Gourmet)</span>
           </div>
         </div>
 
-        <!-- Household Counters -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="p-4 rounded-2xl border border-stone-200 bg-cream flex flex-col justify-between">
             <div>
@@ -234,9 +216,9 @@
               <p class="text-xs text-stone-500">Volle Portionen (1,0×)</p>
             </div>
             <div class="flex items-center justify-between mt-4">
-              <button type="button" id="btn-adults-minus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100 active:scale-95">−</button>
+              <button type="button" id="btn-adults-minus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100">−</button>
               <span id="display-adults" class="text-xl font-bold text-stone-900 tabular-nums">2</span>
-              <button type="button" id="btn-adults-plus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100 active:scale-95">+</button>
+              <button type="button" id="btn-adults-plus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100">+</button>
             </div>
           </div>
 
@@ -246,9 +228,9 @@
               <p class="text-xs text-stone-500">Kleinere Portionen (0,6×)</p>
             </div>
             <div class="flex items-center justify-between mt-4">
-              <button type="button" id="btn-children-minus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100 active:scale-95">−</button>
+              <button type="button" id="btn-children-minus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100">−</button>
               <span id="display-children" class="text-xl font-bold text-stone-900 tabular-nums">0</span>
-              <button type="button" id="btn-children-plus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100 active:scale-95">+</button>
+              <button type="button" id="btn-children-plus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100">+</button>
             </div>
           </div>
 
@@ -258,18 +240,17 @@
               <p class="text-xs text-stone-500">Frische-Rhythmus</p>
             </div>
             <div class="flex items-center justify-between mt-4">
-              <button type="button" id="btn-trips-minus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100 active:scale-95">−</button>
+              <button type="button" id="btn-trips-minus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100">−</button>
               <span id="display-trips" class="text-xl font-bold text-stone-900 tabular-nums">1×</span>
-              <button type="button" id="btn-trips-plus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100 active:scale-95">+</button>
+              <button type="button" id="btn-trips-plus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100">+</button>
             </div>
           </div>
         </div>
 
-        <!-- Supermarkets -->
         <div class="space-y-3">
           <label class="block text-sm font-bold text-stone-800">Bevorzugte Supermärkte & Läden</label>
           <div id="supermarket-chips" class="flex flex-wrap gap-2"></div>
-          <div class="flex flex-col sm:flex-row gap-2 mt-2">
+          <div class="flex gap-2 mt-2">
             <input type="text" id="input-custom-market" placeholder="Weiteren Laden hinzufügen (z.B. Kaufland, Netto, Asia-Markt)..." class="flex-1 px-4 py-2.5 text-sm rounded-xl border border-stone-300 focus:outline-none focus:border-sage-500" />
             <button type="button" id="btn-add-market" class="px-4 py-2.5 text-sm font-semibold rounded-xl bg-stone-800 text-white hover:bg-stone-700 shrink-0 transition">Hinzufügen</button>
           </div>
@@ -277,7 +258,7 @@
       </div>
 
       <!-- STEP 2: DIET & ALLERGIES -->
-      <div id="step-2" style="display: none;" class="wizard-step bg-white rounded-3xl shadow-sm border border-stone-200 p-6 sm:p-8 space-y-6">
+      <div id="step-2" class="wizard-step hidden bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-6">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-sage-100 text-sage-700 mb-2">Ernährung</span>
           <h2 class="text-2xl sm:text-3xl font-bold text-stone-900">Ernährungsform & Unverträglichkeiten</h2>
@@ -301,7 +282,7 @@
       </div>
 
       <!-- STEP 3: NO-GOS & FAVORITE CUISINES -->
-      <div id="step-3" style="display: none;" class="wizard-step bg-white rounded-3xl shadow-sm border border-stone-200 p-6 sm:p-8 space-y-6">
+      <div id="step-3" class="wizard-step hidden bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-6">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-terracotta-100 text-terracotta-600 mb-2">Geschmack</span>
           <h2 class="text-2xl sm:text-3xl font-bold text-stone-900">Abneigungen (No-Gos) & Lieblingsküchen</h2>
@@ -311,7 +292,7 @@
         <div class="space-y-2.5">
           <label class="block text-sm font-bold text-stone-800">Häufige No-Go-Zutaten (anklicken zum Ausschließen)</label>
           <div id="nogo-chips" class="flex flex-wrap gap-2"></div>
-          <div class="flex flex-col sm:flex-row gap-2 mt-2">
+          <div class="flex gap-2 mt-2">
             <input type="text" id="input-custom-nogo" placeholder="Eigene Abneigung hinzufügen (z.B. Koriander, Rosinen, Fenchel)..." class="flex-1 px-4 py-2.5 text-sm rounded-xl border border-stone-300 focus:outline-none focus:border-sage-500" />
             <button type="button" id="btn-add-nogo" class="px-4 py-2.5 text-sm font-semibold rounded-xl bg-terracotta-500 text-white hover:bg-terracotta-600 shrink-0 transition">Ausschließen</button>
           </div>
@@ -324,21 +305,20 @@
       </div>
 
       <!-- STEP 4: TIME, EQUIPMENT & LEFTOVERS -->
-      <div id="step-4" style="display: none;" class="wizard-step bg-white rounded-3xl shadow-sm border border-stone-200 p-6 sm:p-8 space-y-6">
+      <div id="step-4" class="wizard-step hidden bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-6">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-sage-100 text-sage-700 mb-2">Alltag & Reste</span>
           <h2 class="text-2xl sm:text-3xl font-bold text-stone-900">Kochzeit, Ausstattung & Resteverwertung</h2>
           <p class="text-stone-600 text-sm mt-1">Wie viel Zeit hast du unter der Woche und wie sollen Reste eingeplant werden?</p>
         </div>
 
-        <!-- Max Cooking Time Slider -->
         <div class="p-5 rounded-2xl bg-cream border border-stone-200 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <label for="slider-cooktime" class="text-sm font-bold text-stone-800">Maximale Kochzeit unter der Woche</label>
             <div class="flex items-center gap-2">
-              <button type="button" id="btn-time-minus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100 active:scale-95">−</button>
+              <button type="button" id="btn-time-minus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100">−</button>
               <span class="px-3.5 py-1.5 rounded-xl bg-white border border-stone-300 font-bold text-sage-700 tabular-nums"><span id="display-cooktime">35</span> Min.</span>
-              <button type="button" id="btn-time-plus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100 active:scale-95">+</button>
+              <button type="button" id="btn-time-plus" class="w-9 h-9 rounded-xl bg-white border border-stone-300 font-bold text-stone-700 hover:bg-stone-100">+</button>
             </div>
           </div>
           <input type="range" id="slider-cooktime" class="kulinaris-slider" min="15" max="90" step="5" value="35" />
@@ -349,21 +329,18 @@
           </div>
         </div>
 
-        <!-- Skill Level -->
         <div class="space-y-2">
           <label class="block text-sm font-bold text-stone-800">Kocherfahrung</label>
           <div id="skill-options" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5"></div>
         </div>
 
-        <!-- Equipment -->
         <div class="space-y-2">
           <label class="block text-sm font-bold text-stone-800">Vorhandene Küchengeräte</label>
           <div id="equipment-chips" class="flex flex-wrap gap-2"></div>
         </div>
 
-        <!-- Leftovers & Meal Prep Strategy -->
         <div class="space-y-3 pt-2 border-t border-stone-200">
-          <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center justify-between">
             <label class="block text-sm font-bold text-stone-800">Platz für Reste & Vorkochen</label>
             <span class="text-xs font-semibold text-sage-700 bg-sage-100 px-2.5 py-0.5 rounded-full">
               <span id="display-leftover-days" class="tabular-nums">2</span> Reste-Slots / Woche
@@ -374,28 +351,26 @@
       </div>
 
       <!-- STEP 5: SCHEDULE MATRIX & NUTRITION GOALS -->
-      <div id="step-5" style="display: none;" class="wizard-step bg-white rounded-3xl shadow-sm border border-stone-200 p-6 sm:p-8 space-y-6">
+      <div id="step-5" class="wizard-step hidden bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-6">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-sage-100 text-sage-700 mb-2">Feinplanung</span>
           <h2 class="text-2xl sm:text-3xl font-bold text-stone-900">Koch-Tage, Mahlzeiten & Ernährungsziele</h2>
           <p class="text-stone-600 text-sm mt-1">Bestimme genau, an welchen Tagen frisch gekocht wird, wann Reste gegessen werden und welche Ziele gelten.</p>
         </div>
 
-        <!-- Quick Presets & Live Slot Counter -->
-        <div class="p-4 sm:p-5 rounded-2xl bg-sage-50 border border-sage-200 space-y-3">
+        <div class="p-4 sm:p-5 rounded-2xl bg-sage-50/90 border border-sage-200 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="text-xs font-semibold text-sage-800">
               Aktive Mahlzeiten: <span id="display-active-meals" class="text-sm font-bold tabular-nums">14</span> Slots
               (<span id="display-cook-slots" class="tabular-nums">12</span>× frisch kochen, <span id="display-leftover-slots" class="tabular-nums">2</span>× Reste)
             </div>
             <div class="flex flex-wrap gap-1.5">
-              <button type="button" data-preset="all-dinner" class="preset-btn text-xs px-2.5 py-1 rounded-lg bg-white border border-sage-300 text-sage-700 font-semibold hover:bg-sage-100 transition">Nur Abendessen</button>
-              <button type="button" data-preset="workweek" class="preset-btn text-xs px-2.5 py-1 rounded-lg bg-white border border-sage-300 text-sage-700 font-semibold hover:bg-sage-100 transition">Mo–Fr Abends + Sa/So voll</button>
-              <button type="button" data-preset="full" class="preset-btn text-xs px-2.5 py-1 rounded-lg bg-white border border-sage-300 text-sage-700 font-semibold hover:bg-sage-100 transition">Alle 14 Mahlzeiten</button>
+              <button type="button" data-preset="all-dinner" class="preset-btn text-xs px-2.5 py-1 rounded-lg bg-white border border-sage-300 text-sage-700 font-semibold hover:bg-sage-100">Nur Abendessen</button>
+              <button type="button" data-preset="workweek" class="preset-btn text-xs px-2.5 py-1 rounded-lg bg-white border border-sage-300 text-sage-700 font-semibold hover:bg-sage-100">Mo–Fr Abends + Sa/So voll</button>
+              <button type="button" data-preset="full" class="preset-btn text-xs px-2.5 py-1 rounded-lg bg-white border border-sage-300 text-sage-700 font-semibold hover:bg-sage-100">Alle 14 Mahlzeiten</button>
             </div>
           </div>
 
-          <!-- Day Matrix Table -->
           <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
@@ -405,13 +380,12 @@
                   <th class="py-2 pl-2 font-bold text-center">Abendessen</th>
                 </tr>
               </thead>
-              <tbody id="schedule-matrix-body" class="divide-y divide-sage-200"></tbody>
+              <tbody id="schedule-matrix-body" class="divide-y divide-sage-200/60"></tbody>
             </table>
           </div>
-          <p class="text-[11px] text-stone-500">Klicke auf einen Slot, um zwischen <strong>🍳 Frisch kochen</strong>, <strong>🥡 Reste / Fix</strong> und <strong>➖ Frei / Auswärts</strong> zu wechseln.</p>
+          <p class="text-[11px] text-stone-500">Tippe auf einen Slot, um zwischen <strong>🍳 Frisch kochen</strong>, <strong>🥡 Reste / Fix</strong> und <strong>➖ Frei / Auswärts</strong> zu wechseln.</p>
         </div>
 
-        <!-- Nutrition & Flavor Goals -->
         <div class="space-y-2.5">
           <label class="block text-sm font-bold text-stone-800">Ernährungs- & Geschmacksziele</label>
           <div id="goal-chips" class="flex flex-wrap gap-2"></div>
@@ -420,48 +394,46 @@
       </div>
 
       <!-- WIZARD NAVIGATION FOOTER -->
-      <div class="mt-6 flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-stone-200 shadow-sm">
-        <button type="button" id="btn-prev-step" style="display: none;" class="px-5 py-3 rounded-xl border border-stone-300 bg-white text-stone-700 font-semibold text-sm hover:bg-stone-100 transition">
+      <div class="mt-6 flex items-center justify-between gap-3">
+        <button type="button" id="btn-prev-step" class="hidden px-5 py-3 rounded-2xl border border-stone-300 bg-white text-stone-700 font-semibold text-sm hover:bg-stone-100 transition">
           ← Zurück
         </button>
         <div class="flex-1"></div>
-        <button type="button" id="btn-next-step" class="px-6 py-3 rounded-xl bg-sage-500 text-white font-semibold text-sm hover:bg-sage-600 shadow-sm transition">
+        <button type="button" id="btn-next-step" class="px-6 py-3 rounded-2xl bg-sage-500 text-white font-semibold text-sm hover:bg-sage-600 shadow-sm transition">
           Weiter →
         </button>
-        <button type="button" id="btn-generate-plan" style="display: none;" class="px-7 py-3.5 rounded-xl bg-terracotta-500 text-white font-bold text-sm sm:text-base hover:bg-terracotta-600 shadow-md transition items-center gap-2">
+        <button type="button" id="btn-generate-plan" class="hidden px-7 py-3.5 rounded-2xl bg-terracotta-500 text-white font-bold text-sm sm:text-base hover:bg-terracotta-600 shadow-md transition flex items-center gap-2">
           <span>✨ KI-Wochenplan erstellen</span>
         </button>
       </div>
     </section>
 
     <!-- ==================== DASHBOARD VIEW ==================== -->
-    <section id="dashboard-view" style="display: none;" class="space-y-6 fade-in">
-      <!-- Top Summary & Live Budget Bar -->
-      <div class="bg-white rounded-3xl border border-stone-200 p-5 sm:p-7 shadow-sm">
+    <section id="dashboard-view" class="hidden space-y-6 fade-in">
+      <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-7 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
           <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-stone-900">Dein KI-Wochenplan</h1>
-            <p id="dashboard-subtitle" class="text-xs sm:text-sm text-stone-500 mt-0.5">Live generiert für deine Vorlieben, Supermärkte & Reste-Slots</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-stone-900">Dein Wochenplan</h1>
+            <p id="dashboard-subtitle" class="text-xs sm:text-sm text-stone-500 mt-0.5">Live generiert mit Gemini KI</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button type="button" id="btn-generate-all-images" class="px-3.5 py-2.5 rounded-xl border border-sage-300 bg-sage-50 text-sage-700 text-xs sm:text-sm font-semibold hover:bg-sage-100 transition">
-              📸 Alle KI-Fotos erzeugen
+            <button type="button" id="btn-generate-all-images" class="px-3.5 py-2 rounded-xl border border-sage-300 bg-sage-50 text-sage-700 text-xs sm:text-sm font-semibold hover:bg-sage-100 transition">
+              📸 Gerichtsfotos erzeugen
             </button>
-            <button type="button" id="btn-regenerate-week" class="px-4 py-2.5 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 transition shadow-sm">
+            <button type="button" id="btn-regenerate-week" class="px-4 py-2 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 transition shadow-sm">
               🔄 Neue Woche generieren
             </button>
           </div>
         </div>
 
-        <!-- Budget Progress Bar -->
         <div class="p-4 rounded-2xl bg-cream border border-stone-200 space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-2">
               <span class="font-semibold text-stone-700">Geschätzte Wochenkosten:</span>
               <span id="dash-spent" class="font-bold text-lg text-sage-700 tabular-nums">0,00 €</span>
               <span class="text-stone-400">/</span>
               <span id="dash-budget" class="font-bold text-stone-800 tabular-nums">75,00 €</span>
-              <button type="button" id="btn-quick-edit-budget" title="Wochenbudget direkt anpassen" class="text-xs px-2.5 py-1 rounded-lg bg-white border border-stone-300 text-stone-700 font-semibold hover:bg-stone-100 transition">✎ Budget ändern</button>
+              <button type="button" id="btn-quick-edit-budget" class="text-xs px-2.5 py-0.5 rounded-lg bg-white border border-stone-300 text-stone-600 hover:bg-stone-100">✎ Budget</button>
             </div>
             <span id="dash-budget-status" class="text-xs font-semibold px-3 py-1 rounded-full bg-sage-100 text-sage-700">Im Budget</span>
           </div>
@@ -471,50 +443,35 @@
         </div>
       </div>
 
-      <!-- Inline Budget Editor -->
-      <div id="inline-budget-editor" style="display: none;" class="bg-white rounded-2xl border border-sage-300 p-4 shadow-sm flex-wrap items-center justify-between gap-3 fade-in">
-        <div class="flex items-center gap-3">
-          <span class="text-sm font-semibold text-stone-800">Neues Wochenbudget (€):</span>
-          <input type="number" id="input-inline-budget" min="10" max="1000" step="5" class="w-28 px-3 py-1.5 rounded-xl border border-stone-300 text-sm font-bold text-stone-900 focus:outline-none focus:border-sage-500" />
-        </div>
-        <div class="flex items-center gap-2">
-          <button type="button" id="btn-cancel-inline-budget" class="px-3.5 py-1.5 rounded-xl border border-stone-300 text-xs font-semibold text-stone-700 hover:bg-stone-100">Abbrechen</button>
-          <button type="button" id="btn-save-inline-budget" class="px-4 py-1.5 rounded-xl bg-sage-500 text-white text-xs font-semibold hover:bg-sage-600">Übernehmen</button>
-        </div>
-      </div>
-
-      <!-- Dashboard Navigation Tabs -->
       <div class="flex flex-wrap gap-2 border-b border-stone-200 pb-3">
-        <button type="button" data-tab="plan" class="dash-tab px-4 py-2.5 rounded-xl text-sm font-semibold bg-sage-500 text-white shadow-sm transition">📅 Wochenplan</button>
-        <button type="button" data-tab="shopping" class="dash-tab px-4 py-2.5 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition">
+        <button type="button" data-tab="plan" class="dash-tab px-4 py-2 rounded-xl text-sm font-semibold bg-sage-500 text-white transition">📅 Wochenplan</button>
+        <button type="button" data-tab="shopping" class="dash-tab px-4 py-2 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition">
           🛒 Einkaufsliste (<span id="shopping-count-badge" class="tabular-nums">0</span>)
         </button>
-        <button type="button" data-tab="favorites" class="dash-tab px-4 py-2.5 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition">
+        <button type="button" data-tab="favorites" class="dash-tab px-4 py-2 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition">
           ❤️ Favoriten & Blacklist (<span id="fav-count-badge" class="tabular-nums">0</span>)
         </button>
-        <button type="button" data-tab="feedback" class="dash-tab px-4 py-2.5 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition">
+        <button type="button" data-tab="feedback" class="dash-tab px-4 py-2 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition">
           🧠 KI-Lernprofil
         </button>
       </div>
 
-      <!-- TAB 1: MEAL PLAN GRID -->
       <div id="tab-plan" class="dash-tab-content space-y-4">
         <div id="meal-plan-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
 
-      <!-- TAB 2: SHOPPING LIST -->
-      <div id="tab-shopping" style="display: none;" class="dash-tab-content space-y-4">
-        <div class="bg-white rounded-3xl border border-stone-200 p-5 sm:p-7 space-y-5">
+      <div id="tab-shopping" class="dash-tab-content hidden space-y-4">
+        <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-7 space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 class="text-xl font-bold text-stone-900">Gebündelte Einkaufsliste</h2>
               <div id="shopping-markets-tags" class="flex flex-wrap gap-1.5 mt-1.5"></div>
             </div>
             <div class="flex flex-wrap gap-2">
-              <button type="button" id="btn-export-notes" class="px-4 py-2.5 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 shadow-sm transition">
+              <button type="button" id="btn-export-notes" class="px-4 py-2 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 shadow-sm transition">
                 📝 In Notizen-App übertragen
               </button>
-              <button type="button" id="btn-download-md" class="px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs sm:text-sm font-semibold hover:bg-stone-100 transition">
+              <button type="button" id="btn-download-md" class="px-3.5 py-2 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs sm:text-sm font-semibold hover:bg-stone-100 transition">
                 ⬇️ Als Notiz-Datei (.md)
               </button>
             </div>
@@ -524,39 +481,37 @@
         </div>
       </div>
 
-      <!-- TAB 3: FAVORITES & BLACKLIST -->
-      <div id="tab-favorites" style="display: none;" class="dash-tab-content grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-3xl border border-stone-200 p-5 sm:p-6 space-y-4">
+      <div id="tab-favorites" class="dash-tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-6 space-y-4">
           <h2 class="text-xl font-bold text-stone-900">❤️ Gespeicherte Favoriten</h2>
-          <p class="text-xs text-stone-500">Diese Gerichte bevorzugt die KI – oder du setzt sie direkt per Klick in einen Tag ein.</p>
+          <p class="text-xs text-stone-500">Diese Gerichte bevorzugt die KI bei künftigen Plänen.</p>
           <div id="favorites-list-container" class="space-y-3"></div>
         </div>
 
-        <div class="bg-white rounded-3xl border border-stone-200 p-5 sm:p-6 space-y-4">
+        <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-6 space-y-4">
           <h2 class="text-xl font-bold text-stone-900">🚫 Abgelehnte Gerichte (Blacklist)</h2>
-          <p class="text-xs text-stone-500">Werden bei zukünftigen KI-Wochenplänen nicht mehr vorgeschlagen.</p>
+          <p class="text-xs text-stone-500">Werden bei zukünftigen Wochenplänen strikt ausgeschlossen.</p>
           <div id="blacklist-container" class="space-y-3"></div>
         </div>
       </div>
 
-      <!-- TAB 4: AI FEEDBACK & LEARNING PROFILE -->
-      <div id="tab-feedback" style="display: none;" class="dash-tab-content max-w-2xl space-y-5">
-        <div class="bg-white rounded-3xl border border-stone-200 p-6 space-y-4">
+      <div id="tab-feedback" class="dash-tab-content hidden max-w-2xl space-y-5">
+        <div class="bg-white rounded-3xl border border-stone-200/90 p-6 space-y-4">
           <h2 class="text-xl font-bold text-stone-900">🧠 Rückmeldung zur Woche geben</h2>
-          <p class="text-sm text-stone-600">Sag Kulinaris, was gut gepasst hat oder was anders sein soll. Dein Feedback fließt direkt in den KI-Prompt für alle nächsten Wochenpläne ein.</p>
+          <p class="text-sm text-stone-600">Dein Feedback wird direkt an die KI übergeben und verbessert alle zukünftigen Pläne.</p>
 
           <div class="flex flex-wrap gap-2" id="quick-feedback-tags">
-            <button type="button" data-fb="Portionen waren etwas zu klein" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-sage-50 transition">Portionen zu klein</button>
-            <button type="button" data-fb="Portionen waren zu groß, mehr Reste entstanden" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-sage-50 transition">Portionen zu groß</button>
-            <button type="button" data-fb="Bitte noch günstigere Zutaten verwenden" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-sage-50 transition">Günstiger planen</button>
-            <button type="button" data-fb="Weniger einzelne Zutaten pro Rezept bitte" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-sage-50 transition">Weniger Zutaten</button>
-            <button type="button" data-fb="Kräftiger würzen und mehr Abwechslung" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 bg-white text-stone-700 hover:bg-sage-50 transition">Kräftiger würzen</button>
+            <button type="button" data-fb="Portionen waren etwas zu klein" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 hover:bg-sage-50">Portionen zu klein</button>
+            <button type="button" data-fb="Portionen waren zu groß" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 hover:bg-sage-50">Portionen zu groß</button>
+            <button type="button" data-fb="Noch günstigere Zutaten verwenden" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 hover:bg-sage-50">Günstiger planen</button>
+            <button type="button" data-fb="Weniger einzelne Zutaten pro Rezept" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 hover:bg-sage-50">Weniger Zutaten</button>
+            <button type="button" data-fb="Kräftiger würzen und mehr Abwechslung" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 hover:bg-sage-50">Kräftiger würzen</button>
           </div>
 
-          <textarea id="input-feedback-text" rows="3" placeholder="Deine persönliche Rückmeldung (z.B. 'Montags war zu aufwendig, bitte nur 15-Minuten-Gerichte am Wochenstart')..." class="w-full p-3.5 text-sm rounded-2xl border border-stone-300 focus:outline-none focus:border-sage-500"></textarea>
+          <textarea id="input-feedback-text" rows="3" placeholder="Deine persönliche Rückmeldung..." class="w-full p-3.5 text-sm rounded-2xl border border-stone-300 focus:outline-none focus:border-sage-500"></textarea>
 
-          <button type="button" id="btn-save-feedback" class="px-5 py-2.5 rounded-xl bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600 transition">
-            Feedback speichern & KI-Lernprofil aktualisieren
+          <button type="button" id="btn-save-feedback" class="px-5 py-2.5 rounded-xl bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600">
+            Feedback speichern
           </button>
 
           <div class="pt-4 border-t border-stone-200 space-y-2">
@@ -568,108 +523,38 @@
     </section>
   </main>
 
-  <!-- ==================== API-KEY MANAGER MODAL ==================== -->
-  <div id="apikey-modal" style="display: none;" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 shadow-2xl border border-stone-200">
+  <!-- ==================== API KEY MODAL ==================== -->
+  <div id="apikey-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-stone-200">
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <span class="text-2xl">🔑</span>
-          <h2 class="text-xl font-bold text-stone-900">Google Gemini API-Key</h2>
-        </div>
-        <button type="button" id="btn-close-apikey-modal" class="w-8 h-8 rounded-full bg-stone-100 font-bold text-stone-700 hover:bg-stone-200">✕</button>
+        <h2 class="text-xl font-bold text-stone-900">🔑 Google Gemini API-Key</h2>
+        <button type="button" id="btn-close-apikey" class="w-8 h-8 rounded-full bg-stone-100 font-bold text-stone-700 hover:bg-stone-200">✕</button>
       </div>
-
-      <p class="text-sm text-stone-600">
-        Dein API-Key wird ausschließlich lokal in diesem Browser (<code class="text-xs bg-stone-100 px-1.5 py-0.5 rounded">localStorage</code>) gespeichert und direkt für deine Rezept- und Bildanfragen an Google Gemini genutzt.
+      <p class="text-xs sm:text-sm text-stone-600">
+        Dein Key wird ausschließlich lokal in diesem Gerät gespeichert. Kostenlos erstellen unter <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="text-sage-700 font-semibold underline">aistudio.google.com/apikey</a>.
       </p>
-
-      <div class="p-3.5 rounded-2xl bg-sage-50 border border-sage-200 text-xs text-sage-800 flex items-center justify-between gap-2">
-        <span>Noch keinen Key? Kostenlos in 30 Sekunden erstellen:</span>
-        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-sage-500 text-white font-semibold hover:bg-sage-600 shrink-0 transition">
-          Google AI Studio ↗
-        </a>
-      </div>
-
       <div class="space-y-2">
-        <label for="input-gemini-apikey" class="block text-xs font-bold text-stone-700">Dein Gemini API-Key (beginnt mit AIza...):</label>
-        <div class="flex gap-2">
-          <input type="password" id="input-gemini-apikey" placeholder="AIzaSy..." autocomplete="off" class="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-stone-300 font-mono focus:outline-none focus:border-sage-500" />
-          <button type="button" id="btn-toggle-apikey-visibility" class="px-3 py-2 rounded-xl border border-stone-300 text-xs font-semibold text-stone-700 hover:bg-stone-100">
-            👁️ Zeigen
-          </button>
-        </div>
-        <div id="apikey-test-result" style="display: none;" class="text-xs font-semibold px-3 py-2 rounded-xl"></div>
+        <label for="input-api-key" class="block text-xs font-bold text-stone-700">API-Key (beginnt mit AIza...):</label>
+        <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-stone-300 focus:outline-none focus:border-sage-500" />
       </div>
-
-      <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200">
-        <button type="button" id="btn-delete-apikey" class="px-3.5 py-2 rounded-xl border border-red-200 text-red-600 text-xs font-semibold hover:bg-red-50 transition">
-          🗑️ Key löschen
-        </button>
-        <div class="flex flex-wrap gap-2">
-          <button type="button" id="btn-test-apikey" class="px-3.5 py-2 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs sm:text-sm font-semibold hover:bg-stone-100 transition">
-            🔌 Verbindung testen
-          </button>
-          <button type="button" id="btn-save-apikey" class="px-5 py-2 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 shadow-sm transition">
-            💾 Speichern
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== INSTALL PWA MODAL ==================== -->
-  <div id="install-modal" style="display: none;" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 space-y-5 shadow-2xl border border-stone-200">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <span class="text-2xl">📲</span>
-          <h2 class="text-xl font-bold text-stone-900">Kulinaris als App installieren</h2>
-        </div>
-        <button type="button" id="btn-close-install-modal" class="w-8 h-8 rounded-full bg-stone-100 font-bold text-stone-700 hover:bg-stone-200">✕</button>
-      </div>
-
-      <p class="text-sm text-stone-600">
-        Installiere Kulinaris direkt auf deinem Startbildschirm oder Desktop – inklusive eigenem App-Icon, Vollbildmodus und Offline-Zugriff auf deinen Wochenplan & die Einkaufsliste.
-      </p>
-
-      <div id="native-install-box" style="display: none;" class="p-4 rounded-2xl bg-sage-50 border border-sage-200 text-center space-y-3">
-        <p class="text-xs font-semibold text-sage-800">Dein Browser unterstützt die direkte 1-Klick-Installation:</p>
-        <button type="button" id="btn-trigger-native-install" class="w-full py-3 px-4 rounded-xl bg-sage-500 text-white font-bold text-sm hover:bg-sage-600 shadow-sm transition">
-          ✨ Jetzt direkt installieren
-        </button>
-      </div>
-
-      <div class="space-y-3 text-xs sm:text-sm text-stone-700">
-        <div class="p-3.5 rounded-2xl bg-cream border border-stone-200">
-          <div class="font-bold text-stone-900 mb-1">🤖 Android (Chrome / Edge)</div>
-          <p>Tippe oben rechts auf das <strong>⋮ Menü</strong> und wähle <strong>„App installieren“</strong> oder <strong>„Zum Startbildschirm hinzufügen“</strong>.</p>
-        </div>
-        <div class="p-3.5 rounded-2xl bg-cream border border-stone-200">
-          <div class="font-bold text-stone-900 mb-1">🍎 iPhone & iPad (Safari)</div>
-          <p>Tippe unten/oben auf das <strong>Teilen-Symbol (□↑)</strong> und wähle <strong>„Zum Home-Bildschirm“</strong>.</p>
-        </div>
-        <div class="p-3.5 rounded-2xl bg-cream border border-stone-200">
-          <div class="font-bold text-stone-900 mb-1">💻 Windows / Mac / Chromebook</div>
-          <p>Klicke rechts in der Adressleiste auf das <strong>Installieren-Symbol (⊕ / 🖥️)</strong> oder im Browser-Menü auf <strong>„Kulinaris installieren“</strong>.</p>
-        </div>
-      </div>
-
-      <div class="p-3 rounded-xl bg-stone-100 text-[11px] text-stone-600">
-        <strong>Tipp:</strong> Wenn du die Datei lokal geöffnet hast, lade sie einfach auf einen kostenlosen statischen Hoster (z. B. GitHub Pages, Netlify Drop oder Vercel) hoch – dann funktioniert die PWA-Installation auf jedem Gerät ohne Einschränkung.
+      <div id="apikey-test-status" class="hidden text-xs font-semibold p-3 rounded-xl"></div>
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button type="button" id="btn-save-apikey" class="flex-1 py-2.5 px-4 rounded-xl bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600">Speichern</button>
+        <button type="button" id="btn-test-apikey" class="py-2.5 px-4 rounded-xl border border-stone-300 text-sm font-semibold text-stone-700 hover:bg-stone-100">🔌 Verbindung testen</button>
       </div>
     </div>
   </div>
 
   <!-- ==================== RECIPE DETAIL & SWAP MODAL ==================== -->
-  <div id="recipe-modal" style="display: none;" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm items-center justify-center p-4">
+  <div id="recipe-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200">
       <div id="modal-image-wrapper" class="relative h-48 sm:h-56 bg-sage-100 flex items-center justify-center overflow-hidden">
-        <img id="modal-meal-image" src="" alt="Gericht" style="display: none;" class="w-full h-full object-cover" />
+        <img id="modal-meal-image" src="" alt="Gericht" class="hidden w-full h-full object-cover" />
         <div id="modal-image-placeholder" class="text-center p-4">
           <span class="text-5xl">🍽️</span>
-          <p class="text-xs text-sage-700 font-semibold mt-1">Klicke unten auf „KI-Foto erzeugen“</p>
+          <p class="text-xs text-sage-700 font-semibold mt-1">Noch kein Foto erzeugt</p>
         </div>
-        <button type="button" id="btn-close-recipe-modal" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-stone-800 font-bold shadow hover:bg-stone-100 transition">✕</button>
+        <button type="button" id="btn-close-recipe-modal" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/95 text-stone-800 font-bold shadow hover:bg-white">✕</button>
       </div>
 
       <div class="p-6 space-y-5">
@@ -695,35 +580,34 @@
           </div>
         </div>
 
-        <!-- Swap with custom instruction -->
         <div class="p-4 rounded-2xl bg-sage-50 border border-sage-200 space-y-2">
           <label for="input-swap-wish" class="block text-xs font-bold text-sage-800">Dieses Gericht per KI gezielt austauschen (optional mit Wunsch):</label>
-          <div class="flex flex-col sm:flex-row gap-2">
+          <div class="flex gap-2">
             <input type="text" id="input-swap-wish" placeholder="z.B. lieber etwas mit Nudeln, schneller, ohne Käse..." class="flex-1 px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-sage-300 bg-white focus:outline-none" />
-            <button type="button" id="btn-modal-swap" class="px-4 py-2 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 shrink-0 transition">🎲 KI-Neuauswahl</button>
+            <button type="button" id="btn-modal-swap" class="px-4 py-2 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 shrink-0">🎲 Neu generieren</button>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200">
           <div class="flex flex-wrap gap-2">
-            <button type="button" id="btn-modal-fav" class="px-3.5 py-2 rounded-xl border border-stone-300 bg-white text-stone-800 text-xs sm:text-sm font-semibold hover:bg-rose-50 transition">❤️ Favorisieren</button>
-            <button type="button" id="btn-modal-ban" class="px-3.5 py-2 rounded-xl border border-stone-300 bg-white text-stone-800 text-xs sm:text-sm font-semibold hover:bg-red-50 transition">👎 Nie wieder</button>
-            <button type="button" id="btn-modal-leftover" class="px-3.5 py-2 rounded-xl border border-stone-300 bg-white text-stone-800 text-xs sm:text-sm font-semibold hover:bg-amber-50 transition">🥡 Reste auf nächsten Slot</button>
+            <button type="button" id="btn-modal-fav" class="px-3.5 py-2 rounded-xl border border-stone-300 text-xs sm:text-sm font-semibold hover:bg-rose-50">❤️ Favorisieren</button>
+            <button type="button" id="btn-modal-ban" class="px-3.5 py-2 rounded-xl border border-stone-300 text-xs sm:text-sm font-semibold hover:bg-red-50">👎 Nie wieder</button>
+            <button type="button" id="btn-modal-leftover" class="px-3.5 py-2 rounded-xl border border-stone-300 text-xs sm:text-sm font-semibold hover:bg-amber-50">🥡 Reste auf nächsten Slot</button>
           </div>
-          <button type="button" id="btn-modal-gen-img" class="px-3.5 py-2 rounded-xl bg-stone-800 text-white text-xs sm:text-sm font-semibold hover:bg-stone-700 transition">📸 KI-Foto erzeugen</button>
+          <button type="button" id="btn-modal-gen-img" class="px-3.5 py-2 rounded-xl bg-stone-800 text-white text-xs sm:text-sm font-semibold hover:bg-stone-700">📸 Foto erzeugen</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ==================== SHARE MODAL ==================== -->
-  <div id="share-modal" style="display: none;" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm items-center justify-center p-4">
+  <div id="share-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-stone-200">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-bold text-stone-900">🔗 Wochenplan teilen</h2>
-        <button type="button" id="btn-close-share-modal" class="w-8 h-8 rounded-full bg-stone-100 font-bold text-stone-700 hover:bg-stone-200">✕</button>
+        <button type="button" id="btn-close-share-modal" class="w-8 h-8 rounded-full bg-stone-100 font-bold text-stone-700">✕</button>
       </div>
-      <p class="text-sm text-stone-600">Teile deinen Plan als interaktiven Link (damit die andere Person ihn direkt in Kulinaris öffnen kann) oder als formatierte Text-Übersicht.</p>
+      <p class="text-sm text-stone-600">Teile deinen Plan als interaktiven Link oder als Text-Übersicht.</p>
       <div class="space-y-2">
         <label class="text-xs font-bold text-stone-700">Interaktiver Plan-Link:</label>
         <div class="flex gap-2">
@@ -732,28 +616,30 @@
         </div>
       </div>
       <div class="flex flex-wrap gap-2 pt-2">
-        <button type="button" id="btn-native-share" class="flex-1 py-2.5 px-4 rounded-xl bg-terracotta-500 text-white text-sm font-semibold hover:bg-terracotta-600">📲 Über App teilen (WhatsApp, Mail...)</button>
-        <button type="button" id="btn-copy-share-text" class="py-2.5 px-4 rounded-xl border border-stone-300 bg-white text-sm font-semibold text-stone-700 hover:bg-stone-100">📋 Als Text kopieren</button>
+        <button type="button" id="btn-native-share" class="flex-1 py-2.5 px-4 rounded-xl bg-terracotta-500 text-white text-sm font-semibold hover:bg-terracotta-600">📲 Über App teilen</button>
+        <button type="button" id="btn-copy-share-text" class="py-2.5 px-4 rounded-xl border border-stone-300 text-sm font-semibold text-stone-700 hover:bg-stone-100">📋 Als Text kopieren</button>
       </div>
     </div>
   </div>
 
   <!-- ==================== LOADING OVERLAY ==================== -->
-  <div id="loading-overlay" style="display: none;" class="fixed inset-0 z-50 bg-cream/90 backdrop-blur-sm flex-col items-center justify-center p-6 text-center">
+  <div id="loading-overlay" class="hidden fixed inset-0 z-50 bg-cream/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
     <div class="w-14 h-14 border-4 border-sage-200 border-t-sage-600 rounded-full animate-spin mb-4"></div>
-    <h3 id="loading-title" class="text-xl font-bold text-stone-900">KI erstellt deinen individuellen Wochenplan...</h3>
-    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Gemini analysiert dein Budget, deine Supermärkte, Koch-Tage, Reste-Slots und Ziele für maximale Vielfalt.</p>
+    <h3 id="loading-title" class="text-xl font-bold text-stone-900">Gemini KI erstellt deinen Wochenplan...</h3>
+    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Alle deine Angaben, Supermärkte, No-Gos und Reste-Slots werden live berechnet.</p>
   </div>
 
   <!-- ==================== TOAST ==================== -->
-  <div id="toast" style="display: none;" class="fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl bg-stone-900 text-white text-sm font-medium shadow-xl"></div>
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden px-4 py-3 rounded-2xl bg-stone-900 text-white text-sm font-medium shadow-xl"></div>
 
   <script>
     (function () {
-      const STORAGE_KEY = 'kulinaris_pwa_state_v1';
+      const STORAGE_KEY = 'kulinaris_pwa_v6';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-
+      const ACTIVE_MODEL_STORAGE = 'kulinaris_gemini_model';
+      const DEFAULT_MODEL = 'gemini-3.8-flash';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+
       const SUPERMARKETS = ['Rewe', 'Edeka', 'Lidl', 'Aldi', 'dm / Bio-Markt', 'Wochenmarkt', 'Penny'];
       const DIETS = ['Allesesser (Mischkost)', 'Vegetarisch', 'Vegan', 'Pescetarisch', 'Flexitarisch (wenig Fleisch)', 'Low Carb / Keto'];
       const ALLERGIES = ['Laktose', 'Gluten', 'Nüsse / Erdnüsse', 'Soja', 'Ei', 'Fisch / Meeresfrüchte', 'Sellerie', 'Senf'];
@@ -810,220 +696,165 @@
       let pendingSharedPayload = null;
       let deferredInstallPrompt = null;
 
-      // ==================== PWA SETUP (DYNAMIC MANIFEST, ICON & SERVICE WORKER) ====================
+      // ==================== PWA MANIFEST & SERVICE WORKER ====================
       function initPWA() {
-        try {
-          const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-            <defs>
-              <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#4A7C59"/>
-                <stop offset="100%" stop-color="#2E5039"/>
-              </linearGradient>
-            </defs>
-            <rect width="512" height="512" rx="112" fill="url(#g)"/>
-            <text x="256" y="340" font-family="Georgia, serif" font-size="280" font-weight="bold" fill="#FFFFFF" text-anchor="middle">K</text>
-          </svg>`;
-          const iconDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(iconSvg);
-          const appleIcon = document.getElementById('pwa-apple-icon');
-          if (appleIcon) appleIcon.href = iconDataUrl;
+        const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#4A7C59"/><text x="256" y="345" font-family="Georgia,serif" font-size="300" font-weight="bold" fill="#FAF8F5" text-anchor="middle">K</text></svg>`;
+        const iconUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(iconSvg);
 
-          const startUrl = window.location.href.split('#')[0];
-          const manifest = {
-            name: 'Kulinaris – KI-Wochenplaner',
-            short_name: 'Kulinaris',
-            description: 'Persönlicher KI-Wochenplaner, Resteverwertung & gebündelte Einkaufsliste.',
-            start_url: startUrl,
-            scope: './',
-            display: 'standalone',
-            background_color: '#FAF8F5',
-            theme_color: '#4A7C59',
-            icons: [
-              { src: iconDataUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
-              { src: iconDataUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
-            ]
-          };
-          const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-          const manifestUrl = URL.createObjectURL(manifestBlob);
-          const manifestLink = document.getElementById('pwa-manifest-link');
-          if (manifestLink) manifestLink.href = manifestUrl;
-        } catch (_) {}
-
-        // Inline Service Worker registration with silent fallback for sandboxed iframes
-        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
-          try {
-            const swCode = `
-              const CACHE_NAME = 'kulinaris-offline-v1';
-              self.addEventListener('install', (e) => { self.skipWaiting(); });
-              self.addEventListener('activate', (e) => { e.waitUntil(self.clients.claim()); });
-              self.addEventListener('fetch', (e) => {
-                if (e.request.method !== 'GET') return;
-                e.respondWith(
-                  fetch(e.request)
-                    .then((res) => {
-                      const copy = res.clone();
-                      caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy)).catch(() => {});
-                      return res;
-                    })
-                    .catch(() => caches.match(e.request))
-                );
-              });
-            `;
-            const swBlob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(swBlob);
-            navigator.serviceWorker.register(swUrl).catch(() => {});
-          } catch (_) {}
-        }
+        const manifest = {
+          name: 'Kulinaris – KI-Wochenplaner',
+          short_name: 'Kulinaris',
+          start_url: './',
+          display: 'standalone',
+          background_color: '#FAF8F5',
+          theme_color: '#4A7C59',
+          icons: [
+            { src: iconUrl, sizes: '192x192', type: 'image/svg+xml' },
+            { src: iconUrl, sizes: '512x512', type: 'image/svg+xml' }
+          ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(manifestBlob);
+        document.head.appendChild(link);
 
         window.addEventListener('beforeinstallprompt', (e) => {
           e.preventDefault();
           deferredInstallPrompt = e;
-          showEl(document.getElementById('native-install-box'), 'block');
+          document.getElementById('btn-install-pwa').classList.remove('hidden');
         });
 
-        window.addEventListener('appinstalled', () => {
+        document.getElementById('btn-install-pwa').addEventListener('click', async () => {
+          if (!deferredInstallPrompt) return;
+          deferredInstallPrompt.prompt();
+          await deferredInstallPrompt.userChoice;
           deferredInstallPrompt = null;
-          hideEl(document.getElementById('native-install-box'));
-          hideEl(document.getElementById('install-modal'));
-          showToast('🎉 Kulinaris wurde erfolgreich als App installiert!');
+          document.getElementById('btn-install-pwa').classList.add('hidden');
         });
       }
 
-      // ==================== API-KEY MANAGEMENT ====================
-      function getStoredApiKey() {
-        try {
-          return (localStorage.getItem(API_KEY_STORAGE) || '').trim();
-        } catch (_) {
-          return '';
-        }
+      // ==================== API KEY & GEMINI REST CLIENT ====================
+      function getApiKey() {
+        return (localStorage.getItem(API_KEY_STORAGE) || '').trim();
       }
 
-      function setStoredApiKey(key) {
-        try {
-          const clean = (key || '').trim();
-          if (clean) localStorage.setItem(API_KEY_STORAGE, clean);
-          else localStorage.removeItem(API_KEY_STORAGE);
-        } catch (_) {}
+      function setApiKey(key) {
+        localStorage.setItem(API_KEY_STORAGE, key.trim());
         updateApiKeyStatusUI();
       }
 
       function updateApiKeyStatusUI() {
-        const key = getStoredApiKey();
-        const dot = document.getElementById('apikey-status-dot');
-        const banner = document.getElementById('apikey-missing-banner');
-
-        if (key) {
-          dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
-          hideEl(banner);
+        const hasKey = getApiKey().length > 10;
+        const dot = document.getElementById('apikey-dot');
+        const banner = document.getElementById('apikey-banner');
+        if (hasKey) {
+          dot.className = 'w-2 h-2 rounded-full bg-emerald-500';
+          banner.classList.add('hidden');
         } else {
-          dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
-          showEl(banner, 'block');
+          dot.className = 'w-2 h-2 rounded-full bg-amber-500';
+          banner.classList.remove('hidden');
         }
       }
 
-      function openApiKeyModal() {
-        const inp = document.getElementById('input-gemini-apikey');
-        inp.value = getStoredApiKey();
-        inp.type = 'password';
-        document.getElementById('btn-toggle-apikey-visibility').textContent = '👁️ Zeigen';
-        hideEl(document.getElementById('apikey-test-result'));
-        showEl(document.getElementById('apikey-modal'), 'flex');
-      }
-
-      async function testApiKeyConnection() {
-        const inp = document.getElementById('input-gemini-apikey');
-        const key = inp.value.trim();
-        const resBox = document.getElementById('apikey-test-result');
-
-        if (!key) {
-          resBox.className = 'text-xs font-semibold px-3 py-2 rounded-xl bg-red-50 text-red-700 border border-red-200';
-          resBox.textContent = '⚠️ Bitte gib zuerst einen Google Gemini API-Key ein.';
-          showEl(resBox, 'block');
-          return;
-        }
-
-        resBox.className = 'text-xs font-semibold px-3 py-2 rounded-xl bg-stone-100 text-stone-700';
-        resBox.textContent = '⏳ Teste Verbindung zur Google Gemini API...';
-        showEl(resBox, 'block');
+      async function resolveWorkingModel(apiKey) {
+        const cached = localStorage.getItem(ACTIVE_MODEL_STORAGE);
+        if (cached) return cached;
 
         try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
-          const response = await fetch(url, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+          if (res.ok) {
+            const data = await res.json();
+            const models = (data.models || [])
+              .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+              .map(m => m.name.replace(/^models\//, ''));
+            const preferred = models.find(n => n.includes('3.8-flash'))
+              || models.find(n => n.includes('flash') && !n.includes('2.5'))
+              || models.find(n => n.includes('flash'))
+              || models[0];
+            if (preferred) {
+              localStorage.setItem(ACTIVE_MODEL_STORAGE, preferred);
+              return preferred;
+            }
+          }
+        } catch (_) {}
+        return DEFAULT_MODEL;
+      }
+
+      async function callGeminiJSON(promptText) {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+          openApiKeyModal();
+          throw new Error('Bitte zuerst deinen Google Gemini API-Key hinterlegen.');
+        }
+
+        let model = await resolveWorkingModel(apiKey);
+        const makeRequest = async (modelName) => {
+          return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: 'Antworte nur mit OK.' }] }]
+              contents: [{ parts: [{ text: promptText }] }],
+              generationConfig: {
+                temperature: 0.9,
+                responseMimeType: 'application/json'
+              }
             })
           });
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            const msg = errData?.error?.message || `HTTP ${response.status}`;
-            throw new Error(msg);
+        };
+
+        let response = await makeRequest(model);
+
+        // If cached model was deprecated or rejected, clear cache and retry with auto-discovered model
+        if (!response.ok && (response.status === 404 || response.status === 400)) {
+          localStorage.removeItem(ACTIVE_MODEL_STORAGE);
+          const freshModel = await resolveWorkingModel(apiKey);
+          if (freshModel !== model) {
+            model = freshModel;
+            response = await makeRequest(model);
           }
-          resBox.className = 'text-xs font-semibold px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200';
-          resBox.textContent = '✅ Verbindung erfolgreich! Dein Gemini API-Key funktioniert einwandfrei.';
-        } catch (err) {
-          resBox.className = 'text-xs font-semibold px-3 py-2 rounded-xl bg-red-50 text-red-700 border border-red-200';
-          resBox.textContent = `❌ Verbindung fehlgeschlagen: ${err.message}`;
         }
+
+        const data = await response.json();
+        if (!response.ok) {
+          const msg = data?.error?.message || `HTTP ${response.status}`;
+          throw new Error(msg);
+        }
+
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+        return JSON.parse(cleaned);
       }
 
-      // ==================== HELPERS ====================
-      function showEl(el, displayType = 'block') {
-        if (!el) return;
-        el.style.display = displayType;
+      function openApiKeyModal() {
+        document.getElementById('input-api-key').value = getApiKey();
+        document.getElementById('apikey-test-status').classList.add('hidden');
+        document.getElementById('apikey-modal').classList.remove('hidden');
       }
 
-      function hideEl(el) {
-        if (!el) return;
-        el.style.display = 'none';
-      }
-
+      // ==================== STATE & HELPERS ====================
       function loadState() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (raw) {
             const parsed = JSON.parse(raw);
-            state = {
-              ...state,
-              ...parsed,
-              prefs: {
-                ...state.prefs,
-                ...(parsed.prefs || {})
-              }
-            };
+            state = { ...state, ...parsed, prefs: { ...state.prefs, ...(parsed.prefs || {}) } };
           }
-        } catch (e) {
-          console.warn('Could not load state:', e);
-        }
+        } catch (_) {}
       }
 
       function saveState() {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        } catch (e) {
-          console.warn('Could not save state (likely image cache size):', e);
-        }
-      }
-
-      function copyToClipboardSafe(text) {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        try {
-          document.execCommand('copy');
         } catch (_) {}
-        document.body.removeChild(ta);
       }
 
       function showToast(msg) {
         const el = document.getElementById('toast');
         el.textContent = msg;
-        showEl(el, 'block');
+        el.classList.remove('hidden');
         clearTimeout(el._timer);
-        el._timer = setTimeout(() => hideEl(el), 3800);
+        el._timer = setTimeout(() => el.classList.add('hidden'), 3500);
       }
 
       function formatEuro(num) {
@@ -1040,24 +871,7 @@
         return 0;
       }
 
-      async function fetchWithBackoff(url, options, maxRetries = 3) {
-        let delay = 1000;
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-          const response = await fetch(url, options);
-          if (response.ok) {
-            return await response.json();
-          }
-          if (attempt === maxRetries) {
-            const errData = await response.json().catch(() => ({}));
-            const msg = errData?.error?.message || `HTTP ${response.status}`;
-            throw new Error(msg);
-          }
-          await new Promise(res => setTimeout(res, delay));
-          delay *= 2;
-        }
-      }
-
-      // ==================== LIVE WIZARD NUMBERS & SLIDERS ====================
+      // ==================== WIZARD NUMBERS & CONTROLS ====================
       function updateSliderTrack(slider) {
         if (!slider) return;
         const min = Number(slider.min) || 0;
@@ -1069,10 +883,9 @@
 
       function refreshAllWizardNumbers() {
         const p = state.prefs;
-
-        // 1. Budget
         const budget = Math.max(20, Math.min(300, Number(p.budget) || 75));
         p.budget = budget;
+
         const sliderBudget = document.getElementById('slider-budget');
         if (sliderBudget) {
           sliderBudget.value = String(budget);
@@ -1085,20 +898,14 @@
         document.getElementById('display-budget-per-person').textContent = perPersonDay.toFixed(2).replace('.', ',');
 
         const badge = document.getElementById('budget-category-badge');
-        if (perPersonDay < 4.5) {
-          badge.textContent = 'Sparsam & Clever (Discounter-Fokus)';
-        } else if (perPersonDay <= 8.5) {
-          badge.textContent = 'Ausgewogen & Alltagstauglich';
-        } else {
-          badge.textContent = 'Komfort & Bio-freundlich';
-        }
+        if (perPersonDay < 4.5) badge.textContent = 'Sparsam & Clever (Discounter-Fokus)';
+        else if (perPersonDay <= 8.5) badge.textContent = 'Ausgewogen & Alltagstauglich';
+        else badge.textContent = 'Komfort & Bio-freundlich';
 
-        // 2. Household Counters
         document.getElementById('display-adults').textContent = String(p.adults);
         document.getElementById('display-children').textContent = String(p.children);
         document.getElementById('display-trips').textContent = `${p.shoppingTrips}×`;
 
-        // 3. Cook Time Slider
         const cookTime = Math.max(15, Math.min(90, Number(p.maxCookTime) || 35));
         p.maxCookTime = cookTime;
         const sliderTime = document.getElementById('slider-cooktime');
@@ -1113,7 +920,6 @@
         else if (cookTime <= 45) timeLabel.textContent = 'Ausgewogene Feierabendküche';
         else timeLabel.textContent = 'Ausgiebiges Kochen erlaubt';
 
-        // 4. Schedule Matrix & Leftover Counts
         let cookSlots = 0;
         let leftoverSlots = 0;
         p.schedule.forEach(row => {
@@ -1129,8 +935,7 @@
         document.getElementById('display-leftover-slots').textContent = String(leftoverSlots);
       }
 
-      // ==================== RENDER WIZARD OPTIONS ====================
-      function renderChipGroup(containerId, items, selectedList, onToggle, activeClass = 'bg-sage-500 text-white border-sage-500 shadow-sm') {
+      function renderChipGroup(containerId, items, selectedList, onToggle, activeClass = 'bg-sage-500 text-white border-sage-500') {
         const container = document.getElementById(containerId);
         if (!container) return;
         container.innerHTML = '';
@@ -1166,7 +971,7 @@
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = `p-3.5 rounded-2xl border text-left text-xs sm:text-sm font-bold transition ${
-            active ? 'bg-sage-500 text-white border-sage-500 shadow-sm' : 'bg-cream text-stone-800 border-stone-200 hover:bg-stone-100'
+            active ? 'bg-sage-500 text-white border-sage-500' : 'bg-cream text-stone-800 border-stone-200 hover:bg-stone-100'
           }`;
           btn.textContent = d;
           btn.addEventListener('click', () => {
@@ -1182,7 +987,7 @@
           if (idx >= 0) state.prefs.allergies.splice(idx, 1);
           else state.prefs.allergies.push(a);
           renderWizardControls();
-        }, 'bg-terracotta-500 text-white border-terracotta-500 shadow-sm');
+        }, 'bg-terracotta-500 text-white border-terracotta-500');
 
         const allNogos = Array.from(new Set([...NOGOS, ...state.prefs.nogos]));
         renderChipGroup('nogo-chips', allNogos, state.prefs.nogos, (n) => {
@@ -1190,7 +995,7 @@
           if (idx >= 0) state.prefs.nogos.splice(idx, 1);
           else state.prefs.nogos.push(n);
           renderWizardControls();
-        }, 'bg-terracotta-500 text-white border-terracotta-500 shadow-sm');
+        }, 'bg-terracotta-500 text-white border-terracotta-500');
 
         renderChipGroup('cuisine-chips', CUISINES, state.prefs.cuisines, (c) => {
           const idx = state.prefs.cuisines.indexOf(c);
@@ -1206,7 +1011,7 @@
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = `p-3.5 rounded-2xl border text-left transition ${
-            active ? 'bg-sage-500 text-white border-sage-500 shadow-sm' : 'bg-cream text-stone-800 border-stone-200 hover:bg-stone-100'
+            active ? 'bg-sage-500 text-white border-sage-500' : 'bg-cream text-stone-800 border-stone-200 hover:bg-stone-100'
           }`;
           btn.innerHTML = `<div class="text-xs sm:text-sm font-bold">${s.id}</div><div class="text-[11px] ${active ? 'text-sage-100' : 'text-stone-500'} mt-0.5">${s.desc}</div>`;
           btn.addEventListener('click', () => {
@@ -1231,17 +1036,11 @@
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = `p-3.5 rounded-2xl border text-left transition ${
-            active ? 'bg-sage-500 text-white border-sage-500 shadow-sm' : 'bg-cream text-stone-800 border-stone-200 hover:bg-stone-100'
+            active ? 'bg-sage-500 text-white border-sage-500' : 'bg-cream text-stone-800 border-stone-200 hover:bg-stone-100'
           }`;
           btn.innerHTML = `<div class="text-xs sm:text-sm font-bold">${m.title}</div><div class="text-[11px] ${active ? 'text-sage-100' : 'text-stone-500'} mt-0.5">${m.desc}</div>`;
           btn.addEventListener('click', () => {
             state.prefs.leftoverMode = m.id;
-            if (m.id === 'none') {
-              state.prefs.schedule.forEach(r => {
-                if (r.lunch === 'leftover') r.lunch = 'cook';
-                if (r.dinner === 'leftover') r.dinner = 'cook';
-              });
-            }
             saveState();
             renderWizardControls();
             refreshAllWizardNumbers();
@@ -1254,7 +1053,7 @@
         const modeInfo = {
           cook: { label: '🍳 Frisch kochen', cls: 'bg-sage-500 text-white border-sage-500' },
           leftover: { label: '🥡 Reste / Fix', cls: 'bg-amber-100 text-amber-900 border-amber-300' },
-          off: { label: '➖ Frei / Auswärts', cls: 'bg-white text-stone-500 border-stone-200' }
+          off: { label: '➖ Frei / Auswärts', cls: 'bg-white text-stone-400 border-stone-200' }
         };
         const cycle = { cook: 'leftover', leftover: 'off', off: 'cook' };
 
@@ -1298,14 +1097,12 @@
         document.getElementById('input-custom-goal').value = state.prefs.customGoal || '';
       }
 
-      // ==================== WIZARD NAVIGATION ====================
       function goToStep(stepNum) {
         state.currentStep = Math.max(1, Math.min(5, stepNum));
         saveState();
 
         document.querySelectorAll('.wizard-step').forEach((el, i) => {
-          if (i + 1 === state.currentStep) showEl(el, 'block');
-          else hideEl(el);
+          el.classList.toggle('hidden', i + 1 !== state.currentStep);
         });
 
         const stepTitles = [
@@ -1326,551 +1123,179 @@
           } else if (s < state.currentStep) {
             pill.className = 'step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-sage-100 text-sage-700 truncate transition';
           } else {
-            pill.className = 'step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-700 truncate transition';
+            pill.className = 'step-pill py-2 px-2 rounded-xl text-xs font-semibold bg-stone-200 text-stone-600 truncate transition';
           }
         });
 
-        const btnPrev = document.getElementById('btn-prev-step');
-        const btnNext = document.getElementById('btn-next-step');
-        const btnGen = document.getElementById('btn-generate-plan');
-
-        if (state.currentStep === 1) hideEl(btnPrev);
-        else showEl(btnPrev, 'inline-flex');
-
-        if (state.currentStep === 5) {
-          hideEl(btnNext);
-          showEl(btnGen, 'inline-flex');
-        } else {
-          showEl(btnNext, 'inline-flex');
-          hideEl(btnGen);
-        }
+        document.getElementById('btn-prev-step').classList.toggle('hidden', state.currentStep === 1);
+        document.getElementById('btn-next-step').classList.toggle('hidden', state.currentStep === 5);
+        document.getElementById('btn-generate-plan').classList.toggle('hidden', state.currentStep !== 5);
       }
 
-      function bindWizardEvents() {
-        document.getElementById('header-brand').addEventListener('click', () => {
-          if (Array.isArray(state.plan) && state.plan.length > 0) showDashboard();
-          else showWizard();
-        });
-
-        // API-Key & Install Buttons
-        document.getElementById('btn-open-apikey').addEventListener('click', openApiKeyModal);
-        document.getElementById('btn-banner-apikey').addEventListener('click', openApiKeyModal);
-        document.getElementById('btn-close-apikey-modal').addEventListener('click', () => hideEl(document.getElementById('apikey-modal')));
-        document.getElementById('btn-toggle-apikey-visibility').addEventListener('click', () => {
-          const inp = document.getElementById('input-gemini-apikey');
-          const btn = document.getElementById('btn-toggle-apikey-visibility');
-          if (inp.type === 'password') {
-            inp.type = 'text';
-            btn.textContent = '🙈 Verbergen';
-          } else {
-            inp.type = 'password';
-            btn.textContent = '👁️ Zeigen';
-          }
-        });
-        document.getElementById('btn-test-apikey').addEventListener('click', testApiKeyConnection);
-        document.getElementById('btn-save-apikey').addEventListener('click', () => {
-          const val = document.getElementById('input-gemini-apikey').value.trim();
-          setStoredApiKey(val);
-          hideEl(document.getElementById('apikey-modal'));
-          showToast(val ? '🔑 Gemini API-Key gespeichert!' : 'API-Key entfernt.');
-        });
-        document.getElementById('btn-delete-apikey').addEventListener('click', () => {
-          document.getElementById('input-gemini-apikey').value = '';
-          setStoredApiKey('');
-          hideEl(document.getElementById('apikey-test-result'));
-          showToast('🗑️ API-Key gelöscht.');
-        });
-
-        document.getElementById('btn-install-app').addEventListener('click', () => {
-          showEl(document.getElementById('install-modal'), 'flex');
-        });
-        document.getElementById('btn-close-install-modal').addEventListener('click', () => {
-          hideEl(document.getElementById('install-modal'));
-        });
-        document.getElementById('btn-trigger-native-install').addEventListener('click', async () => {
-          if (!deferredInstallPrompt) return;
-          deferredInstallPrompt.prompt();
-          await deferredInstallPrompt.userChoice;
-          deferredInstallPrompt = null;
-          hideEl(document.getElementById('native-install-box'));
-        });
-
-        // Budget Slider & Buttons
-        const sliderBudget = document.getElementById('slider-budget');
-        const handleBudgetInput = (e) => {
-          state.prefs.budget = Number(e.target.value);
-          refreshAllWizardNumbers();
-          saveState();
-        };
-        sliderBudget.addEventListener('input', handleBudgetInput);
-        sliderBudget.addEventListener('change', handleBudgetInput);
-
-        document.getElementById('btn-budget-minus').addEventListener('click', () => {
-          state.prefs.budget = Math.max(20, Number(state.prefs.budget) - 5);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-        document.getElementById('btn-budget-plus').addEventListener('click', () => {
-          state.prefs.budget = Math.min(300, Number(state.prefs.budget) + 5);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-
-        // Adults, Children & Trips Counters
-        document.getElementById('btn-adults-minus').addEventListener('click', () => {
-          state.prefs.adults = Math.max(1, Number(state.prefs.adults) - 1);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-        document.getElementById('btn-adults-plus').addEventListener('click', () => {
-          state.prefs.adults = Math.min(10, Number(state.prefs.adults) + 1);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-
-        document.getElementById('btn-children-minus').addEventListener('click', () => {
-          state.prefs.children = Math.max(0, Number(state.prefs.children) - 1);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-        document.getElementById('btn-children-plus').addEventListener('click', () => {
-          state.prefs.children = Math.min(10, Number(state.prefs.children) + 1);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-
-        document.getElementById('btn-trips-minus').addEventListener('click', () => {
-          state.prefs.shoppingTrips = Math.max(1, Number(state.prefs.shoppingTrips) - 1);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-        document.getElementById('btn-trips-plus').addEventListener('click', () => {
-          state.prefs.shoppingTrips = Math.min(7, Number(state.prefs.shoppingTrips) + 1);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-
-        // Custom Supermarket
-        document.getElementById('btn-add-market').addEventListener('click', () => {
-          const inp = document.getElementById('input-custom-market');
-          const val = inp.value.trim();
-          if (val && !state.prefs.supermarkets.includes(val)) {
-            state.prefs.supermarkets.push(val);
-            inp.value = '';
-            saveState();
-            renderWizardControls();
-          }
-        });
-
-        document.getElementById('input-health-notes').addEventListener('input', (e) => {
-          state.prefs.healthNotes = e.target.value;
-          saveState();
-        });
-
-        document.getElementById('btn-add-nogo').addEventListener('click', () => {
-          const inp = document.getElementById('input-custom-nogo');
-          const val = inp.value.trim();
-          if (val && !state.prefs.nogos.includes(val)) {
-            state.prefs.nogos.push(val);
-            inp.value = '';
-            saveState();
-            renderWizardControls();
-          }
-        });
-
-        // Cook Time Slider & Buttons
-        const sliderTime = document.getElementById('slider-cooktime');
-        const handleTimeInput = (e) => {
-          state.prefs.maxCookTime = Number(e.target.value);
-          refreshAllWizardNumbers();
-          saveState();
-        };
-        sliderTime.addEventListener('input', handleTimeInput);
-        sliderTime.addEventListener('change', handleTimeInput);
-
-        document.getElementById('btn-time-minus').addEventListener('click', () => {
-          state.prefs.maxCookTime = Math.max(15, Number(state.prefs.maxCookTime) - 5);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-        document.getElementById('btn-time-plus').addEventListener('click', () => {
-          state.prefs.maxCookTime = Math.min(90, Number(state.prefs.maxCookTime) + 5);
-          refreshAllWizardNumbers();
-          saveState();
-        });
-
-        // Schedule Presets
-        document.querySelectorAll('.preset-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const preset = btn.dataset.preset;
-            state.prefs.schedule.forEach((row, idx) => {
-              if (preset === 'all-dinner') {
-                row.lunch = 'off';
-                row.dinner = 'cook';
-              } else if (preset === 'workweek') {
-                row.lunch = idx >= 5 ? 'cook' : 'off';
-                row.dinner = idx === 3 ? 'leftover' : 'cook';
-              } else if (preset === 'full') {
-                row.lunch = idx === 2 || idx === 4 ? 'leftover' : 'cook';
-                row.dinner = 'cook';
-              }
-            });
-            saveState();
-            renderWizardControls();
-            refreshAllWizardNumbers();
-          });
-        });
-
-        document.getElementById('input-custom-goal').addEventListener('input', (e) => {
-          state.prefs.customGoal = e.target.value;
-          saveState();
-        });
-
-        // Step Navigation
-        document.querySelectorAll('.step-pill').forEach(pill => {
-          pill.addEventListener('click', () => goToStep(Number(pill.dataset.gotoStep)));
-        });
-        document.getElementById('btn-prev-step').addEventListener('click', () => goToStep(state.currentStep - 1));
-        document.getElementById('btn-next-step').addEventListener('click', () => goToStep(state.currentStep + 1));
-        document.getElementById('btn-generate-plan').addEventListener('click', () => generateMealPlan());
-      }
-
-      // ==================== REAL GEMINI AI MEAL GENERATION ====================
-      function buildActiveSlotsList() {
-        const slots = [];
-        state.prefs.schedule.forEach(row => {
-          if (row.lunch !== 'off') {
-            slots.push({
-              id: `${row.day}-lunch`,
-              day: row.day,
-              slot: 'Mittagessen',
-              mode: row.lunch
-            });
-          }
-          if (row.dinner !== 'off') {
-            slots.push({
-              id: `${row.day}-dinner`,
-              day: row.day,
-              slot: 'Abendessen',
-              mode: row.dinner
-            });
-          }
-        });
-        return slots;
-      }
-
+      // ==================== LIVE GEMINI MEAL PLAN GENERATION ====================
       async function generateMealPlan() {
-        const key = getStoredApiKey();
-        if (!key) {
-          openApiKeyModal();
-          showToast('🔑 Bitte hinterlege zuerst deinen Google Gemini API-Key.');
-          return;
-        }
+        const p = state.prefs;
+        const activeSlots = [];
+        p.schedule.forEach(row => {
+          if (row.lunch !== 'off') activeSlots.push({ id: `${row.day}-lunch`, day: row.day, slot: 'Mittagessen', mode: row.lunch });
+          if (row.dinner !== 'off') activeSlots.push({ id: `${row.day}-dinner`, day: row.day, slot: 'Abendessen', mode: row.dinner });
+        });
 
-        const activeSlots = buildActiveSlotsList();
         if (activeSlots.length === 0) {
-          showToast('Bitte wähle in Schritt 5 mindestens eine Mahlzeit aus.');
+          showToast('Bitte wähle mindestens einen Mahlzeiten-Slot in der Wochen-Matrix aus.');
           return;
         }
 
         const overlay = document.getElementById('loading-overlay');
-        document.getElementById('loading-title').textContent = 'KI erstellt deinen individuellen Wochenplan...';
-        document.getElementById('loading-subtitle').textContent = 'Gemini plant abwechslungsreiche Rezepte exakt für dein Budget, deine Supermärkte, No-Gos und Reste-Slots.';
-        showEl(overlay, 'flex');
+        document.getElementById('loading-title').textContent = 'Gemini KI erstellt deinen Wochenplan...';
+        overlay.classList.remove('hidden');
 
         try {
-          const p = state.prefs;
-          const slotDescription = activeSlots
-            .map(s => `- ID "${s.id}": ${s.day} (${s.slot}) -> Modus: ${s.mode === 'leftover' ? 'RESTE VOM VORTAG / VORKOCH-RESTE (0.00 EUR, keine neuen Zutaten)' : 'FRISCH KOCHEN'}`)
-            .join('\n');
+          const prompt = `Du bist Kulinaris, ein deutscher Ernährungs- und Kochplaner. Erstelle einen maximal abwechslungsreichen, kreativen Wochen-Essensplan als reines JSON-Objekt.
 
-          const prompt = `Du bist Kulinaris, ein erstklassiger deutscher Ernährungs- und Küchenplaner.
-Erstelle einen kreativen, realistischen und maximal abwechslungsreichen Wochen-Essensplan auf Deutsch für exakt folgende aktive Slots:
-${slotDescription}
-
-Nutzer-Profil & Vorgaben:
-- Wochenbudget gesamt: ${p.budget} € (Summe der geschätzten Kosten aller frisch gekochten Mahlzeiten soll realistisch im Budget bleiben!)
-- Haushalt: ${p.adults} Erwachsene, ${p.children} Kinder (Mengenangaben bei Zutaten exakt auf diesen Haushalt skalieren!)
-- Bevorzugte Supermärkte: ${p.supermarkets.join(', ') || 'Allgemein'}
+NUTZERPROFIL:
+- Wochenbudget gesamt: ${p.budget} Euro
+- Haushalt: ${p.adults} Erwachsene, ${p.children} Kinder
+- Einkäufe pro Woche: ${p.shoppingTrips}x in: ${p.supermarkets.join(', ') || 'beliebiger Supermarkt'}
 - Ernährungsform: ${p.diet}
-- Allergien/Unverträglichkeiten (STRIKT MEIDEN!): ${p.allergies.join(', ') || 'Keine'}
-- Besondere gesundheitliche Hinweise: ${p.healthNotes || 'Keine'}
-- Abneigungen / No-Go-Zutaten (STRIKT MEIDEN!): ${p.nogos.join(', ') || 'Keine'}
-- Lieblingsküchen: ${p.cuisines.join(', ') || 'Vielseitig'}
+- Allergien (STRIKT MEIDEN): ${p.allergies.join(', ') || 'keine'}
+- Gesundheitshinweise: ${p.healthNotes || 'keine'}
+- No-Go-Zutaten (STRIKT MEIDEN): ${p.nogos.join(', ') || 'keine'}
+- Lieblingsküchen: ${p.cuisines.join(', ') || 'alle'}
 - Maximale Kochzeit unter der Woche: ${p.maxCookTime} Minuten
 - Kocherfahrung: ${p.skill}
-- Vorhandene Küchengeräte: ${p.equipment.join(', ')}
-- Resteverwertungs-Strategie: ${p.leftoverMode}
-- Ernährungs- & Geschmacksziele: ${p.goals.join(', ')} ${p.customGoal ? `(${p.customGoal})` : ''}
-- Gespeicherte Favoriten (gerne gelegentlich einbauen, aber nicht kopieren): ${state.favorites.map(f => f.title).join(', ') || 'Keine'}
-- Blacklist (NIEMALS vorschlagen!): ${state.blacklist.join(', ') || 'Keine'}
-- Persönliches KI-Lernprofil / Rückmeldungen des Nutzers (UNBEDINGT BEACHTEN!): ${state.feedbackHistory.join(' | ') || 'Noch keine'}
+- Küchengeräte: ${p.equipment.join(', ')}
+- Restestrategie: ${p.leftoverMode}
+- Ernährungs- & Geschmacksziele: ${p.goals.join(', ')} ${p.customGoal ? '| ' + p.customGoal : ''}
+- Favoriten (gerne berücksichtigen): ${state.favorites.map(f => f.title).join(', ') || 'keine'}
+- Blacklist (NIEMALS vorschlagen): ${state.blacklist.join(', ') || 'keine'}
+- Bisheriges Nutzer-Feedback: ${state.feedbackHistory.join(' | ') || 'keines'}
 
-WICHTIGE REGELN:
-1. Sorge für MAXIMALE kulinarische Vielfalt! Wiederhole niemals zweimal hintereinander dieselbe Hauptzutat oder Beilage (nicht jeden Tag Reis oder Pasta).
-2. Für Slots mit Modus "RESTE": Setze isLeftover=true, title="Reste: [Name des vorangegangenen Gerichts]", estimatedCost=0, ingredients=[], prepTime=10.
-3. Ordne jede Zutat einer Supermarkt-Abteilung ("dept") zu (z.B. "Obst & Gemüse", "Kühlregal & Milchprodukte", "Nudeln, Reis & Getreide", "Konserven & Saucen", "Brot & Backwaren", "Gewürze & Vorrat").
-4. Antworte ausschließlich mit validem JSON gemäß Schema.`;
+EXAKT ZU FÜLLENDE SLOTS (${activeSlots.length} Einträge):
+${JSON.stringify(activeSlots)}
 
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
-          const payload = {
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.9,
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: "ARRAY",
-                items: {
-                  type: "OBJECT",
-                  properties: {
-                    id: { type: "STRING" },
-                    day: { type: "STRING" },
-                    slot: { type: "STRING" },
-                    isLeftover: { type: "BOOLEAN" },
-                    title: { type: "STRING" },
-                    desc: { type: "STRING" },
-                    prepTime: { type: "NUMBER" },
-                    kcal: { type: "NUMBER" },
-                    estimatedCost: { type: "NUMBER" },
-                    ingredients: {
-                      type: "ARRAY",
-                      items: {
-                        type: "OBJECT",
-                        properties: {
-                          name: { type: "STRING" },
-                          amount: { type: "STRING" },
-                          dept: { type: "STRING" }
-                        },
-                        required: ["name", "amount", "dept"]
-                      }
-                    },
-                    steps: {
-                      type: "ARRAY",
-                      items: { type: "STRING" }
-                    }
-                  },
-                  required: ["id", "day", "slot", "isLeftover", "title", "desc", "prepTime", "kcal", "estimatedCost", "ingredients", "steps"]
-                }
-              }
-            }
-          };
+REGELN:
+1. Liefere exakt für jeden Eintrag aus den Slots ein Element in "meals" mit derselben "id", "day", "slot".
+2. Wenn mode === "leftover": Setze "isLeftover": true, "estimatedCost": 0, "ingredients": [] und plane sinnvoll die Reste einer vorherigen größeren Portion ein.
+3. Wenn mode === "cook": Setze "isLeftover": false. Sorge für maximale kulinarische Vielfalt (keine doppelten Hauptzutaten/Beilagen an aufeinanderfolgenden Tagen!) und halte das Gesamtbudget von ${p.budget} Euro realistisch ein.
+4. Passe alle Zutatenmengen an ${p.adults} Erwachsene und ${p.children} Kinder an.
 
-          const result = await fetchWithBackoff(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
+ANTWORT-SCHEMA (striktes JSON):
+{
+  "meals": [
+    {
+      "id": "Montag-dinner",
+      "day": "Montag",
+      "slot": "Abendessen",
+      "isLeftover": false,
+      "emoji": "🍝",
+      "cuisine": "Italienisch",
+      "title": "Gerichtstitel",
+      "desc": "Appetitliche Kurzbeschreibung in 1-2 Sätzen",
+      "prepTime": 25,
+      "kcal": 580,
+      "estimatedCost": 6.50,
+      "ingredients": [
+        { "name": "Zutat", "amount": "250 g", "dept": "Obst & Gemüse" }
+      ],
+      "steps": ["Schritt 1", "Schritt 2", "Schritt 3"]
+    }
+  ]
+}`;
 
-          const rawJson = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (!rawJson) throw new Error('Leere KI-Antwort erhalten.');
-
-          const generatedMeals = JSON.parse(rawJson);
-          if (!Array.isArray(generatedMeals) || generatedMeals.length === 0) {
-            throw new Error('Ungültiges Plan-Format.');
+          const result = await callGeminiJSON(prompt);
+          if (!result || !Array.isArray(result.meals)) {
+            throw new Error('Unerwartetes Antwortformat von der KI.');
           }
 
-          state.plan = generatedMeals.map((m, idx) => ({
-            ...m,
-            id: m.id || activeSlots[idx]?.id || `meal-${idx}`,
-            estimatedCost: m.isLeftover ? 0 : parsePrice(m.estimatedCost)
-          }));
+          state.plan = result.meals;
           state.checkedShopping = {};
+          state.plan.forEach(m => {
+            if (!m.isLeftover && !state.mealImages[m.title]) {
+              state.mealImages[m.title] = generateFoodPhotoCanvas(m);
+            }
+          });
           saveState();
           showDashboard();
-          showToast('✨ Dein persönlicher KI-Wochenplan ist fertig!');
-
-          // Automatically generate AI food photos for the first 3 cooked meals in background
-          const toPreload = state.plan.filter(m => !m.isLeftover && !state.mealImages[m.title]).slice(0, 3);
-          for (const meal of toPreload) {
-            generateSingleMealImage(meal, true);
-          }
+          showToast('✨ KI-Wochenplan erfolgreich generiert!');
         } catch (err) {
-          console.error('Plan generation failed:', err);
-          showToast(`⚠️ KI-Fehler: ${err.message}`);
+          showToast(`Fehler: ${err.message}`);
         } finally {
-          hideEl(overlay);
+          overlay.classList.add('hidden');
         }
       }
 
-      // ==================== REAL GEMINI AI SINGLE MEAL SWAP ====================
       async function swapSingleMeal(mealId, customWish) {
-        const key = getStoredApiKey();
-        if (!key) {
-          openApiKeyModal();
-          showToast('🔑 Bitte hinterlege zuerst deinen Google Gemini API-Key.');
-          return;
-        }
         if (!state.plan) return;
         const meal = state.plan.find(m => m.id === mealId);
         if (!meal) return;
 
         const overlay = document.getElementById('loading-overlay');
-        document.getElementById('loading-title').textContent = 'KI sucht eine passende Alternative...';
-        document.getElementById('loading-subtitle').textContent = customWish
-          ? `Berücksichtige deinen Wunsch: „${customWish}“`
-          : 'Erstelle ein neues, abwechslungsreiches Gericht für diesen Slot.';
-        showEl(overlay, 'flex');
+        document.getElementById('loading-title').textContent = 'Neues Rezept wird generiert...';
+        overlay.classList.remove('hidden');
 
         try {
           const p = state.prefs;
           const existingTitles = state.plan.map(m => m.title).join(', ');
-          const prompt = `Erstelle EINE neue, kreative Alternative auf Deutsch für den Slot "${meal.day} (${meal.slot})".
-${customWish ? `EXPLIZITER WUNSCH DES NUTZERS: "${customWish}"` : 'Wähle ein ganz anderes Gericht als die bisherigen Gerichte der Woche.'}
+          const prompt = `Generiere genau EIN neues, abwechslungsreiches Rezept als JSON-Objekt für ${meal.day} (${meal.slot}).
+Ernährungsform: ${p.diet}. Allergien meiden: ${p.allergies.join(', ') || 'keine'}. No-Gos meiden: ${p.nogos.join(', ') || 'keine'}.
+Haushalt: ${p.adults} Erwachsene, ${p.children} Kinder. Max. Kochzeit: ${p.maxCookTime} Min.
+Wunsch des Nutzers: ${customWish || 'Etwas völlig anderes als die bisherigen Gerichte der Woche'}.
+Bereits in dieser Woche geplant (NICHT wiederholen): ${existingTitles}.
+Blacklist: ${state.blacklist.join(', ') || 'keine'}.
 
-Rahmenbedingungen:
-- Haushalt: ${p.adults} Erwachsene, ${p.children} Kinder
-- Budget-Richtwert pro Mahlzeit: ca. ${Math.round(p.budget / Math.max(1, state.plan.length))} €
-- Ernährungsform: ${p.diet}
-- Allergien (STRIKT MEIDEN): ${p.allergies.join(', ') || 'Keine'}
-- No-Go-Zutaten (STRIKT MEIDEN): ${p.nogos.join(', ') || 'Keine'}
-- Max. Kochzeit: ${p.maxCookTime} Min.
-- Ziele: ${p.goals.join(', ')} ${p.customGoal || ''}
-- Bereits in dieser Woche eingeplant (NICHT wiederholen!): ${existingTitles}
-- Blacklist (NIEMALS vorschlagen!): ${state.blacklist.join(', ') || 'Keine'}
-- Lernprofil: ${state.feedbackHistory.join(' | ') || 'Keine'}
-
-Antworte ausschließlich mit validem JSON gemäß Schema.`;
-
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
-          const payload = {
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.95,
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: "OBJECT",
-                properties: {
-                  title: { type: "STRING" },
-                  desc: { type: "STRING" },
-                  prepTime: { type: "NUMBER" },
-                  kcal: { type: "NUMBER" },
-                  estimatedCost: { type: "NUMBER" },
-                  ingredients: {
-                    type: "ARRAY",
-                    items: {
-                      type: "OBJECT",
-                      properties: {
-                        name: { type: "STRING" },
-                        amount: { type: "STRING" },
-                        dept: { type: "STRING" }
-                      },
-                      required: ["name", "amount", "dept"]
-                    }
-                  },
-                  steps: {
-                    type: "ARRAY",
-                    items: { type: "STRING" }
-                  }
-                },
-                required: ["title", "desc", "prepTime", "kcal", "estimatedCost", "ingredients", "steps"]
-              }
-            }
-          };
-
-          const result = await fetchWithBackoff(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          const rawJson = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (!rawJson) throw new Error('Keine Alternative erhalten.');
-
-          const newMeal = JSON.parse(rawJson);
+JSON-Format:
+{
+  "emoji": "🍲",
+  "cuisine": "Mediterran",
+  "title": "Neuer Gerichtstitel",
+  "desc": "Kurzbeschreibung",
+  "prepTime": 25,
+  "kcal": 560,
+  "estimatedCost": 6.20,
+  "ingredients": [{ "name": "Zutat", "amount": "200 g", "dept": "Obst & Gemüse" }],
+  "steps": ["Schritt 1", "Schritt 2"]
+}`;
+          const newMeal = await callGeminiJSON(prompt);
           Object.assign(meal, {
             ...newMeal,
-            isLeftover: false,
-            estimatedCost: parsePrice(newMeal.estimatedCost)
+            isLeftover: false
           });
-
+          state.mealImages[meal.title] = generateFoodPhotoCanvas(meal);
           saveState();
           updateDashboardBudgetUI();
           renderMealPlanGrid();
           renderShoppingList();
-          if (activeModalMealId === mealId) {
-            openRecipeModal(mealId);
-          }
-          showToast('🎲 Neues KI-Gericht eingesetzt & Budget aktualisiert!');
-          generateSingleMealImage(meal, true);
+          showToast('🎲 Neues KI-Gericht eingesetzt!');
         } catch (err) {
-          console.error('Swap failed:', err);
-          showToast(`⚠️ Konnte Gericht nicht tauschen: ${err.message}`);
+          showToast(`Fehler beim Tauschen: ${err.message}`);
         } finally {
-          hideEl(overlay);
+          overlay.classList.add('hidden');
         }
       }
 
-      // ==================== REAL GEMINI AI FOOD PHOTO GENERATION ====================
-      async function generateSingleMealImage(meal, silent = false) {
-        const key = getStoredApiKey();
-        if (!key) {
-          if (!silent) {
-            openApiKeyModal();
-            showToast('🔑 Bitte hinterlege zuerst deinen Google Gemini API-Key.');
-          }
-          return;
-        }
-        if (!meal || meal.isLeftover) return;
-
-        const prompt = `Appetizing overhead food photography of "${meal.title}" (${meal.desc}), served on a modern ceramic plate on a warm wooden dining table, natural daylight, editorial culinary magazine style, high detail, no text.`;
-
-        try {
-          if (!silent) showToast(`📸 Erzeuge KI-Foto für „${meal.title}“...`);
-
-          // Primary: Imagen 3 predict endpoint
-          let base64Data = null;
-          try {
-            const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${encodeURIComponent(key)}`;
-            const res = await fetch(imagenUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                instances: [{ prompt }],
-                parameters: { sampleCount: 1, aspectRatio: '4:3' }
-              })
-            });
-            if (res.ok) {
-              const data = await res.json();
-              base64Data = data?.predictions?.[0]?.bytesBase64Encoded || null;
-            }
-          } catch (_) {}
-
-          // Fallback: Gemini 2.5 Flash Image generateContent endpoint
-          if (!base64Data) {
-            const flashImgUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${encodeURIComponent(key)}`;
-            const result = await fetchWithBackoff(flashImgUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
-              })
-            }, 1);
-            base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data || null;
-          }
-
-          if (base64Data) {
-            state.mealImages[meal.title] = `data:image/png;base64,${base64Data}`;
-            saveState();
-            renderMealPlanGrid();
-            if (activeModalMealId === meal.id) {
-              const imgEl = document.getElementById('modal-meal-image');
-              const phEl = document.getElementById('modal-image-placeholder');
-              imgEl.src = state.mealImages[meal.title];
-              showEl(imgEl, 'block');
-              hideEl(phEl);
-            }
-            if (!silent) showToast('📸 KI-Foto erfolgreich erstellt!');
-          } else if (!silent) {
-            showToast('⚠️ Bildgenerierung für diesen API-Key derzeit nicht freigeschaltet.');
-          }
-        } catch (err) {
-          console.warn('Image generation skipped/failed:', err);
-          if (!silent) showToast('⚠️ Bildgenerierung aktuell ausgelastet.');
-        }
+      function generateFoodPhotoCanvas(meal) {
+        const colors = ['#4A7C59', '#D96B43', '#3B6548', '#2E5039', '#C05630'];
+        const bg = colors[(meal.title || '').length % colors.length];
+        const emoji = meal.emoji || '🍲';
+        const label = (meal.cuisine || 'Kulinaris').toUpperCase();
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320" viewBox="0 0 480 320">
+          <defs>
+            <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="${bg}"/>
+              <stop offset="100%" stop-color="#1F2937"/>
+            </linearGradient>
+          </defs>
+          <rect width="480" height="320" fill="url(#bgGrad)"/>
+          <circle cx="240" cy="145" r="88" fill="#FAF8F5" opacity="0.96"/>
+          <circle cx="240" cy="145" r="70" fill="#E1ECE4"/>
+          <text x="240" y="164" font-size="64" text-anchor="middle">${emoji}</text>
+          <text x="240" y="274" font-family="sans-serif" font-size="13" font-weight="bold" letter-spacing="2" fill="#E1ECE4" text-anchor="middle">${label}</text>
+        </svg>`;
+        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
       }
 
-      // ==================== DASHBOARD RENDERING ====================
+      // ==================== DASHBOARD UI ====================
       function getTotalEstimatedCost() {
         if (!Array.isArray(state.plan)) return 0;
         return state.plan.reduce((sum, m) => sum + (m.isLeftover ? 0 : parsePrice(m.estimatedCost)), 0);
@@ -1903,45 +1328,41 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
         const container = document.getElementById('meal-plan-container');
         container.innerHTML = '';
 
-        if (!state.plan || state.plan.length === 0) {
-          container.innerHTML = '<p class="text-sm text-stone-500">Keine Mahlzeiten im Plan ausgewählt.</p>';
-          return;
-        }
+        if (!state.plan || state.plan.length === 0) return;
 
         state.plan.forEach(meal => {
           const isFav = state.favorites.some(f => f.title === meal.title);
           const imgUrl = state.mealImages[meal.title];
 
           const card = document.createElement('div');
-          card.className = `bg-white rounded-3xl border ${meal.isLeftover ? 'border-amber-200 bg-amber-50/30' : 'border-stone-200'} p-4 shadow-sm hover:shadow-md transition flex gap-4`;
+          card.className = `bg-white rounded-3xl border ${meal.isLeftover ? 'border-amber-200 bg-amber-50/30' : 'border-stone-200/90'} p-4 shadow-2xs hover:shadow-md transition flex gap-4`;
 
           card.innerHTML = `
-            <div class="w-20 h-20 rounded-2xl bg-sage-50 border border-stone-200 shrink-0 overflow-hidden flex items-center justify-center relative cursor-pointer" data-open-meal="${meal.id}">
+            <div class="w-20 h-20 rounded-2xl bg-sage-50 border border-stone-200 shrink-0 overflow-hidden flex items-center justify-center">
               ${
                 imgUrl && !meal.isLeftover
                   ? `<img src="${imgUrl}" alt="${meal.title}" class="w-full h-full object-cover" />`
-                  : `<span class="text-2xl">${meal.isLeftover ? '🥡' : '🍽️'}</span>`
+                  : `<span class="text-2xl">${meal.isLeftover ? '🥡' : (meal.emoji || '🍽️')}</span>`
               }
             </div>
             <div class="flex-1 min-w-0 flex flex-col justify-between">
               <div>
-                <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold">
+                <div class="flex items-center justify-between gap-2 text-[11px] font-semibold">
                   <span class="${meal.isLeftover ? 'text-amber-800 bg-amber-100' : 'text-sage-700 bg-sage-100'} px-2.5 py-0.5 rounded-full">
                     ${meal.day} · ${meal.slot}
                   </span>
                   <span class="text-stone-500 tabular-nums">${meal.isLeftover ? '0,00 €' : formatEuro(meal.estimatedCost)} · ${meal.prepTime} Min.</span>
                 </div>
-                <h3 class="font-bold text-stone-900 text-sm sm:text-base mt-1.5 line-clamp-1 cursor-pointer hover:text-sage-700" data-open-meal="${meal.id}">${meal.title}</h3>
+                <h3 class="font-bold text-stone-900 text-sm sm:text-base mt-1.5 line-clamp-1">${meal.title}</h3>
                 <p class="text-xs text-stone-500 line-clamp-2 mt-0.5">${meal.desc}</p>
               </div>
 
-              <div class="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2 border-t border-stone-100">
+              <div class="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-stone-100">
                 <button type="button" data-open-meal="${meal.id}" class="text-xs font-bold text-sage-700 hover:underline">Rezept & Details →</button>
                 <div class="flex items-center gap-1">
-                  ${!meal.isLeftover ? `<button type="button" data-quick-img="${meal.id}" title="KI-Foto erzeugen" class="p-1.5 rounded-xl hover:bg-stone-100 text-xs transition">📸</button>` : ''}
-                  <button type="button" data-quick-fav="${meal.id}" title="Favorisieren" class="p-1.5 rounded-xl hover:bg-rose-50 text-xs transition">${isFav ? '❤️' : '🤍'}</button>
-                  <button type="button" data-quick-leftover="${meal.id}" title="Reste auf nächsten Slot schieben" class="p-1.5 rounded-xl hover:bg-amber-50 text-xs transition">🥡</button>
-                  <button type="button" data-quick-swap="${meal.id}" title="Gericht per KI tauschen" class="p-1.5 rounded-xl hover:bg-sage-50 text-xs transition">🎲</button>
+                  <button type="button" data-quick-fav="${meal.id}" title="Favorisieren" class="p-1.5 rounded-xl hover:bg-rose-50 text-xs">${isFav ? '❤️' : '🤍'}</button>
+                  <button type="button" data-quick-leftover="${meal.id}" title="Reste auf nächsten Slot schieben" class="p-1.5 rounded-xl hover:bg-amber-50 text-xs">🥡</button>
+                  <button type="button" data-quick-swap="${meal.id}" title="Gericht per KI tauschen" class="p-1.5 rounded-xl hover:bg-sage-50 text-xs">🎲</button>
                 </div>
               </div>
             </div>
@@ -1951,12 +1372,6 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
 
         container.querySelectorAll('[data-open-meal]').forEach(btn => {
           btn.addEventListener('click', () => openRecipeModal(btn.dataset.openMeal));
-        });
-        container.querySelectorAll('[data-quick-img]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const m = state.plan.find(x => x.id === btn.dataset.quickImg);
-            if (m) generateSingleMealImage(m, false);
-          });
         });
         container.querySelectorAll('[data-quick-fav]').forEach(btn => {
           btn.addEventListener('click', () => toggleFavoriteMeal(btn.dataset.quickFav));
@@ -2036,85 +1451,54 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
         document.getElementById('fav-count-badge').textContent = String(state.favorites.length);
 
         const favBox = document.getElementById('favorites-list-container');
-        if (state.favorites.length === 0) {
-          favBox.innerHTML = '<p class="text-xs text-stone-500">Noch keine Favoriten gespeichert. Klicke auf ❤️ bei einem Gericht.</p>';
-        } else {
-          favBox.innerHTML = state.favorites
-            .map(
-              (f, i) => `
+        favBox.innerHTML = state.favorites.length === 0
+          ? '<p class="text-xs text-stone-500">Noch keine Favoriten gespeichert.</p>'
+          : state.favorites.map((f, i) => `
               <div class="p-3.5 rounded-2xl bg-cream border border-stone-200 flex items-center justify-between gap-2">
                 <div>
                   <div class="text-sm font-bold text-stone-800">${f.title}</div>
                   <div class="text-xs text-stone-500">${formatEuro(f.estimatedCost)} · ${f.prepTime} Min.</div>
                 </div>
-                <div class="flex items-center gap-1.5">
-                  <button type="button" data-apply-fav="${i}" class="text-xs px-2.5 py-1.5 rounded-xl bg-sage-500 text-white font-semibold hover:bg-sage-600">Einsetzen</button>
-                  <button type="button" data-remove-fav="${i}" class="text-xs px-2.5 py-1.5 rounded-xl bg-white border border-stone-300 text-stone-600 hover:bg-red-50 transition">✕</button>
-                </div>
-              </div>`
-            )
-            .join('');
-          favBox.querySelectorAll('[data-apply-fav]').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const fav = state.favorites[Number(btn.dataset.applyFav)];
-              if (fav && Array.isArray(state.plan) && state.plan.length > 0) {
-                Object.assign(state.plan[0], { ...fav, id: state.plan[0].id, day: state.plan[0].day, slot: state.plan[0].slot, isLeftover: false });
-                saveState();
-                updateDashboardBudgetUI();
-                renderMealPlanGrid();
-                renderShoppingList();
-                showToast(`❤️ „${fav.title}“ auf ${state.plan[0].day} eingesetzt!`);
-              }
-            });
+                <button type="button" data-remove-fav="${i}" class="text-xs px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-stone-600">Entfernen</button>
+              </div>`).join('');
+
+        favBox.querySelectorAll('[data-remove-fav]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.favorites.splice(Number(btn.dataset.removeFav), 1);
+            saveState();
+            renderFavoritesAndBlacklist();
+            renderMealPlanGrid();
           });
-          favBox.querySelectorAll('[data-remove-fav]').forEach(btn => {
-            btn.addEventListener('click', () => {
-              state.favorites.splice(Number(btn.dataset.removeFav), 1);
-              saveState();
-              renderFavoritesAndBlacklist();
-              renderMealPlanGrid();
-            });
-          });
-        }
+        });
 
         const banBox = document.getElementById('blacklist-container');
-        if (state.blacklist.length === 0) {
-          banBox.innerHTML = '<p class="text-xs text-stone-500">Keine abgelehnten Gerichte auf der Blacklist.</p>';
-        } else {
-          banBox.innerHTML = state.blacklist
-            .map(
-              (b, i) => `
+        banBox.innerHTML = state.blacklist.length === 0
+          ? '<p class="text-xs text-stone-500">Keine abgelehnten Gerichte auf der Blacklist.</p>'
+          : state.blacklist.map((b, i) => `
               <div class="p-3.5 rounded-2xl bg-red-50/50 border border-red-200 flex items-center justify-between gap-2">
                 <span class="text-sm font-medium text-stone-800">${b}</span>
                 <button type="button" data-remove-ban="${i}" class="text-xs px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-stone-600">Aufheben</button>
-              </div>`
-            )
-            .join('');
-          banBox.querySelectorAll('[data-remove-ban]').forEach(btn => {
-            btn.addEventListener('click', () => {
-              state.blacklist.splice(Number(btn.dataset.removeBan), 1);
-              saveState();
-              renderFavoritesAndBlacklist();
-            });
+              </div>`).join('');
+
+        banBox.querySelectorAll('[data-remove-ban]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.blacklist.splice(Number(btn.dataset.removeBan), 1);
+            saveState();
+            renderFavoritesAndBlacklist();
           });
-        }
+        });
       }
 
       function renderFeedbackHistory() {
         const box = document.getElementById('feedback-history-list');
-        if (state.feedbackHistory.length === 0) {
-          box.innerHTML = '<p class="text-xs text-stone-500">Noch keine Rückmeldungen gespeichert.</p>';
-          return;
-        }
-        box.innerHTML = state.feedbackHistory
-          .map(
-            (fb, i) => `
-            <div class="p-3 rounded-2xl bg-sage-50 border border-sage-200 flex items-center justify-between gap-2 text-xs">
-              <span class="text-stone-800 font-medium">✓ ${fb}</span>
-              <button type="button" data-del-fb="${i}" class="text-stone-400 hover:text-red-600 font-bold">✕</button>
-            </div>`
-          )
-          .join('');
+        box.innerHTML = state.feedbackHistory.length === 0
+          ? '<p class="text-xs text-stone-500">Noch keine Rückmeldungen gespeichert.</p>'
+          : state.feedbackHistory.map((fb, i) => `
+              <div class="p-3 rounded-2xl bg-sage-50 border border-sage-200 flex items-center justify-between gap-2 text-xs">
+                <span class="text-stone-800 font-medium">✓ ${fb}</span>
+                <button type="button" data-del-fb="${i}" class="text-stone-400 hover:text-red-600 font-bold">✕</button>
+              </div>`).join('');
+
         box.querySelectorAll('[data-del-fb]').forEach(btn => {
           btn.addEventListener('click', () => {
             state.feedbackHistory.splice(Number(btn.dataset.delFb), 1);
@@ -2125,10 +1509,10 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
       }
 
       function showDashboard() {
-        hideEl(document.getElementById('wizard-view'));
-        showEl(document.getElementById('dashboard-view'), 'block');
-        showEl(document.getElementById('btn-open-wizard'), 'inline-flex');
-        showEl(document.getElementById('btn-open-share'), 'inline-flex');
+        document.getElementById('wizard-view').classList.add('hidden');
+        document.getElementById('dashboard-view').classList.remove('hidden');
+        document.getElementById('btn-open-wizard').classList.remove('hidden');
+        document.getElementById('btn-open-share').classList.remove('hidden');
 
         const p = state.prefs;
         document.getElementById('dashboard-subtitle').textContent = `${p.adults} Erw.${p.children ? `, ${p.children} Ki.` : ''} · ${p.diet} · Supermärkte: ${p.supermarkets.join(', ') || 'Alle'}`;
@@ -2141,14 +1525,13 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
       }
 
       function showWizard() {
-        hideEl(document.getElementById('dashboard-view'));
-        showEl(document.getElementById('wizard-view'), 'block');
+        document.getElementById('dashboard-view').classList.add('hidden');
+        document.getElementById('wizard-view').classList.remove('hidden');
         renderWizardControls();
         refreshAllWizardNumbers();
         goToStep(state.currentStep || 1);
       }
 
-      // ==================== MEAL ACTIONS ====================
       function toggleFavoriteMeal(mealId) {
         const meal = (state.plan || []).find(m => m.id === mealId);
         if (!meal) return;
@@ -2205,11 +1588,11 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
         const phEl = document.getElementById('modal-image-placeholder');
         if (state.mealImages[meal.title]) {
           imgEl.src = state.mealImages[meal.title];
-          showEl(imgEl, 'block');
-          hideEl(phEl);
+          imgEl.classList.remove('hidden');
+          phEl.classList.add('hidden');
         } else {
-          hideEl(imgEl);
-          showEl(phEl, 'block');
+          imgEl.classList.add('hidden');
+          phEl.classList.remove('hidden');
         }
 
         const ingUl = document.getElementById('modal-ingredients-list');
@@ -2220,48 +1603,214 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
         const stepOl = document.getElementById('modal-steps-list');
         stepOl.innerHTML = (meal.steps || []).map(s => `<li>${s}</li>`).join('');
 
-        showEl(document.getElementById('recipe-modal'), 'flex');
+        document.getElementById('recipe-modal').classList.remove('hidden');
       }
 
-      function bindDashboardEvents() {
+      function bindAllEvents() {
+        document.getElementById('header-brand').addEventListener('click', () => {
+          if (Array.isArray(state.plan) && state.plan.length > 0) showDashboard();
+          else showWizard();
+        });
+
+        // API Key Modal
+        document.getElementById('btn-open-apikey').addEventListener('click', openApiKeyModal);
+        document.getElementById('btn-banner-apikey').addEventListener('click', openApiKeyModal);
+        document.getElementById('btn-close-apikey').addEventListener('click', () => {
+          document.getElementById('apikey-modal').classList.add('hidden');
+        });
+        document.getElementById('btn-save-apikey').addEventListener('click', () => {
+          const val = document.getElementById('input-api-key').value.trim();
+          setApiKey(val);
+          localStorage.removeItem(ACTIVE_MODEL_STORAGE);
+          document.getElementById('apikey-modal').classList.add('hidden');
+          showToast(val ? '🔑 API-Key gespeichert!' : 'API-Key entfernt.');
+        });
+        document.getElementById('btn-test-apikey').addEventListener('click', async () => {
+          const val = document.getElementById('input-api-key').value.trim();
+          const statusEl = document.getElementById('apikey-test-status');
+          if (!val) {
+            statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-red-50 text-red-700';
+            statusEl.textContent = 'Bitte gib zuerst einen API-Key ein.';
+            statusEl.classList.remove('hidden');
+            return;
+          }
+          setApiKey(val);
+          localStorage.removeItem(ACTIVE_MODEL_STORAGE);
+          statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-stone-100 text-stone-700';
+          statusEl.textContent = 'Verbindung zu Gemini wird geprüft...';
+          statusEl.classList.remove('hidden');
+
+          try {
+            const usedModel = await resolveWorkingModel(val);
+            await callGeminiJSON('Antworte nur mit {"ok": true}');
+            statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200';
+            statusEl.textContent = `✓ Verbunden! Aktives Modell: ${usedModel}`;
+          } catch (e) {
+            statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
+            statusEl.textContent = `Verbindung fehlgeschlagen: ${e.message}`;
+          }
+        });
+
+        // Wizard Sliders & Counters
+        const sliderBudget = document.getElementById('slider-budget');
+        const handleBudget = (e) => {
+          state.prefs.budget = Number(e.target.value);
+          refreshAllWizardNumbers();
+          saveState();
+        };
+        sliderBudget.addEventListener('input', handleBudget);
+        sliderBudget.addEventListener('change', handleBudget);
+
+        document.getElementById('btn-budget-minus').addEventListener('click', () => {
+          state.prefs.budget = Math.max(20, Number(state.prefs.budget) - 5);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+        document.getElementById('btn-budget-plus').addEventListener('click', () => {
+          state.prefs.budget = Math.min(300, Number(state.prefs.budget) + 5);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+
+        document.getElementById('btn-adults-minus').addEventListener('click', () => {
+          state.prefs.adults = Math.max(1, Number(state.prefs.adults) - 1);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+        document.getElementById('btn-adults-plus').addEventListener('click', () => {
+          state.prefs.adults = Math.min(10, Number(state.prefs.adults) + 1);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+
+        document.getElementById('btn-children-minus').addEventListener('click', () => {
+          state.prefs.children = Math.max(0, Number(state.prefs.children) - 1);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+        document.getElementById('btn-children-plus').addEventListener('click', () => {
+          state.prefs.children = Math.min(10, Number(state.prefs.children) + 1);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+
+        document.getElementById('btn-trips-minus').addEventListener('click', () => {
+          state.prefs.shoppingTrips = Math.max(1, Number(state.prefs.shoppingTrips) - 1);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+        document.getElementById('btn-trips-plus').addEventListener('click', () => {
+          state.prefs.shoppingTrips = Math.min(7, Number(state.prefs.shoppingTrips) + 1);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+
+        document.getElementById('btn-add-market').addEventListener('click', () => {
+          const inp = document.getElementById('input-custom-market');
+          const val = inp.value.trim();
+          if (val && !state.prefs.supermarkets.includes(val)) {
+            state.prefs.supermarkets.push(val);
+            inp.value = '';
+            saveState();
+            renderWizardControls();
+          }
+        });
+
+        document.getElementById('input-health-notes').addEventListener('input', (e) => {
+          state.prefs.healthNotes = e.target.value;
+          saveState();
+        });
+
+        document.getElementById('btn-add-nogo').addEventListener('click', () => {
+          const inp = document.getElementById('input-custom-nogo');
+          const val = inp.value.trim();
+          if (val && !state.prefs.nogos.includes(val)) {
+            state.prefs.nogos.push(val);
+            inp.value = '';
+            saveState();
+            renderWizardControls();
+          }
+        });
+
+        const sliderTime = document.getElementById('slider-cooktime');
+        const handleTime = (e) => {
+          state.prefs.maxCookTime = Number(e.target.value);
+          refreshAllWizardNumbers();
+          saveState();
+        };
+        sliderTime.addEventListener('input', handleTime);
+        sliderTime.addEventListener('change', handleTime);
+
+        document.getElementById('btn-time-minus').addEventListener('click', () => {
+          state.prefs.maxCookTime = Math.max(15, Number(state.prefs.maxCookTime) - 5);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+        document.getElementById('btn-time-plus').addEventListener('click', () => {
+          state.prefs.maxCookTime = Math.min(90, Number(state.prefs.maxCookTime) + 5);
+          refreshAllWizardNumbers();
+          saveState();
+        });
+
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const preset = btn.dataset.preset;
+            state.prefs.schedule.forEach((row, idx) => {
+              if (preset === 'all-dinner') {
+                row.lunch = 'off';
+                row.dinner = 'cook';
+              } else if (preset === 'workweek') {
+                row.lunch = idx >= 5 ? 'cook' : 'off';
+                row.dinner = idx === 3 ? 'leftover' : 'cook';
+              } else if (preset === 'full') {
+                row.lunch = idx === 2 || idx === 4 ? 'leftover' : 'cook';
+                row.dinner = 'cook';
+              }
+            });
+            saveState();
+            renderWizardControls();
+            refreshAllWizardNumbers();
+          });
+        });
+
+        document.getElementById('input-custom-goal').addEventListener('input', (e) => {
+          state.prefs.customGoal = e.target.value;
+          saveState();
+        });
+
+        document.querySelectorAll('.step-pill').forEach(pill => {
+          pill.addEventListener('click', () => goToStep(Number(pill.dataset.gotoStep)));
+        });
+        document.getElementById('btn-prev-step').addEventListener('click', () => goToStep(state.currentStep - 1));
+        document.getElementById('btn-next-step').addEventListener('click', () => goToStep(state.currentStep + 1));
+        document.getElementById('btn-generate-plan').addEventListener('click', () => generateMealPlan());
+
+        // Dashboard Events
         document.getElementById('btn-open-wizard').addEventListener('click', showWizard);
         document.getElementById('btn-regenerate-week').addEventListener('click', generateMealPlan);
 
-        // Inline Budget Editor
         document.getElementById('btn-quick-edit-budget').addEventListener('click', () => {
-          const box = document.getElementById('inline-budget-editor');
-          const inp = document.getElementById('input-inline-budget');
-          inp.value = String(state.prefs.budget);
-          showEl(box, 'flex');
-          inp.focus();
-        });
-        document.getElementById('btn-cancel-inline-budget').addEventListener('click', () => {
-          hideEl(document.getElementById('inline-budget-editor'));
-        });
-        document.getElementById('btn-save-inline-budget').addEventListener('click', () => {
-          const inp = document.getElementById('input-inline-budget');
-          const val = parseFloat(String(inp.value).replace(',', '.'));
-          if (!isNaN(val) && val >= 10) {
-            state.prefs.budget = Math.min(1000, val);
-            saveState();
-            updateDashboardBudgetUI();
-            refreshAllWizardNumbers();
-            hideEl(document.getElementById('inline-budget-editor'));
-            showToast(`Budget auf ${formatEuro(state.prefs.budget)} aktualisiert`);
+          const next = prompt('Neues Wochenbudget in Euro:', String(state.prefs.budget));
+          if (next !== null) {
+            const val = parseFloat(next.replace(',', '.'));
+            if (!isNaN(val) && val >= 10) {
+              state.prefs.budget = val;
+              saveState();
+              updateDashboardBudgetUI();
+              refreshAllWizardNumbers();
+            }
           }
         });
 
-        document.getElementById('btn-generate-all-images').addEventListener('click', async () => {
-          const targets = (state.plan || []).filter(m => !m.isLeftover && !state.mealImages[m.title]);
-          if (targets.length === 0) {
-            showToast('📸 Alle Gerichte haben bereits ein Foto!');
-            return;
-          }
-          showToast(`📸 Erzeuge ${targets.length} KI-Fotos...`);
-          for (const m of targets) {
-            await generateSingleMealImage(m, true);
-          }
-          showToast('📸 Alle KI-Gerichtsfotos fertig!');
+        document.getElementById('btn-generate-all-images').addEventListener('click', () => {
+          (state.plan || []).forEach(m => {
+            if (!state.mealImages[m.title]) {
+              state.mealImages[m.title] = generateFoodPhotoCanvas(m);
+            }
+          });
+          saveState();
+          renderMealPlanGrid();
+          showToast('📸 Vorschaubilder aktualisiert!');
         });
 
         document.querySelectorAll('.dash-tab').forEach(btn => {
@@ -2269,15 +1818,11 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
             const tab = btn.dataset.tab;
             document.querySelectorAll('.dash-tab').forEach(b => {
               b.className = b === btn
-                ? 'dash-tab px-4 py-2.5 rounded-xl text-sm font-semibold bg-sage-500 text-white shadow-sm transition'
-                : 'dash-tab px-4 py-2.5 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition';
+                ? 'dash-tab px-4 py-2 rounded-xl text-sm font-semibold bg-sage-500 text-white transition'
+                : 'dash-tab px-4 py-2 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition';
             });
             document.querySelectorAll('.dash-tab-content').forEach(c => {
-              if (c.id === `tab-${tab}`) {
-                showEl(c, tab === 'favorites' ? 'grid' : 'block');
-              } else {
-                hideEl(c);
-              }
+              c.classList.toggle('hidden', c.id !== `tab-${tab}`);
             });
           });
         });
@@ -2290,14 +1835,11 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
             }
           });
           const text = lines.join('\n');
-          copyToClipboardSafe(text);
+          try { await navigator.clipboard.writeText(text); } catch (_) {}
           if (navigator.share) {
-            try {
-              await navigator.share({ title: 'Kulinaris Einkaufsliste', text });
-              return;
-            } catch (_) {}
+            try { await navigator.share({ title: 'Kulinaris Einkaufsliste', text }); return; } catch (_) {}
           }
-          showToast('📝 Checkliste kopiert! Jetzt direkt in deine Notizen-App einfügen.');
+          showToast('📝 Checkliste kopiert! Jetzt in deine Notizen-App einfügen.');
         });
 
         document.getElementById('btn-download-md').addEventListener('click', () => {
@@ -2329,64 +1871,69 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
           ta.value = '';
           saveState();
           renderFeedbackHistory();
-          showToast('🧠 Rückmeldung gespeichert! Fließt in den nächsten KI-Prompt ein.');
+          showToast('🧠 Rückmeldung gespeichert!');
         });
 
         document.getElementById('btn-close-recipe-modal').addEventListener('click', () => {
-          hideEl(document.getElementById('recipe-modal'));
+          document.getElementById('recipe-modal').classList.add('hidden');
         });
-        document.getElementById('btn-modal-swap').addEventListener('click', () => {
+        document.getElementById('btn-modal-swap').addEventListener('click', async () => {
           const wish = document.getElementById('input-swap-wish').value.trim();
           document.getElementById('input-swap-wish').value = '';
-          swapSingleMeal(activeModalMealId, wish);
+          await swapSingleMeal(activeModalMealId, wish);
+          openRecipeModal(activeModalMealId);
         });
         document.getElementById('btn-modal-fav').addEventListener('click', () => {
           toggleFavoriteMeal(activeModalMealId);
         });
-        document.getElementById('btn-modal-ban').addEventListener('click', () => {
+        document.getElementById('btn-modal-ban').addEventListener('click', async () => {
           const meal = (state.plan || []).find(m => m.id === activeModalMealId);
           if (meal && !state.blacklist.includes(meal.title)) {
             state.blacklist.push(meal.title);
-            hideEl(document.getElementById('recipe-modal'));
+            document.getElementById('recipe-modal').classList.add('hidden');
             renderFavoritesAndBlacklist();
-            swapSingleMeal(activeModalMealId, '');
-            showToast('🚫 Auf Blacklist gesetzt und durch neues KI-Gericht ersetzt.');
+            await swapSingleMeal(activeModalMealId, '');
           }
         });
         document.getElementById('btn-modal-leftover').addEventListener('click', () => {
           pushLeftoverToNextSlot(activeModalMealId);
-          hideEl(document.getElementById('recipe-modal'));
+          document.getElementById('recipe-modal').classList.add('hidden');
         });
         document.getElementById('btn-modal-gen-img').addEventListener('click', () => {
           const meal = (state.plan || []).find(m => m.id === activeModalMealId);
-          if (meal) generateSingleMealImage(meal, false);
+          if (!meal) return;
+          state.mealImages[meal.title] = generateFoodPhotoCanvas(meal);
+          saveState();
+          openRecipeModal(activeModalMealId);
+          renderMealPlanGrid();
         });
 
         document.getElementById('btn-open-share').addEventListener('click', () => {
           const payload = encodeURIComponent(JSON.stringify({ prefs: state.prefs, plan: state.plan }));
           const url = `${window.location.origin}${window.location.pathname}#plan=${payload}`;
           document.getElementById('share-link-input').value = url;
-          showEl(document.getElementById('share-modal'), 'flex');
+          document.getElementById('share-modal').classList.remove('hidden');
         });
         document.getElementById('btn-close-share-modal').addEventListener('click', () => {
-          hideEl(document.getElementById('share-modal'));
+          document.getElementById('share-modal').classList.add('hidden');
         });
-        document.getElementById('btn-copy-share-link').addEventListener('click', () => {
+        document.getElementById('btn-copy-share-link').addEventListener('click', async () => {
           const inp = document.getElementById('share-link-input');
-          copyToClipboardSafe(inp.value);
-          showToast('🔗 Link in Zwischenablage kopiert!');
+          inp.select();
+          try { await navigator.clipboard.writeText(inp.value); } catch (_) {}
+          showToast('🔗 Link kopiert!');
         });
-        document.getElementById('btn-copy-share-text').addEventListener('click', () => {
+        document.getElementById('btn-copy-share-text').addEventListener('click', async () => {
           const text = (state.plan || []).map(m => `${m.day} (${m.slot}): ${m.title}`).join('\n');
-          copyToClipboardSafe(text);
-          showToast('📋 Wochenübersicht als Text kopiert!');
+          try { await navigator.clipboard.writeText(text); } catch (_) {}
+          showToast('📋 Wochenplan kopiert!');
         });
         document.getElementById('btn-native-share').addEventListener('click', async () => {
           const text = (state.plan || []).map(m => `${m.day} (${m.slot}): ${m.title}`).join('\n');
           if (navigator.share) {
             try { await navigator.share({ title: 'Mein Kulinaris Wochenplan', text }); } catch (_) {}
           } else {
-            copyToClipboardSafe(text);
+            try { await navigator.clipboard.writeText(text); } catch (_) {}
             showToast('📋 Wochenplan kopiert!');
           }
         });
@@ -2399,12 +1946,10 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
             const parsed = JSON.parse(raw);
             if (parsed && Array.isArray(parsed.plan)) {
               pendingSharedPayload = parsed;
-              showEl(document.getElementById('shared-plan-banner'), 'block');
+              document.getElementById('shared-plan-banner').classList.remove('hidden');
             }
           }
-        } catch (e) {
-          console.warn('Invalid shared plan hash:', e);
-        }
+        } catch (_) {}
 
         document.getElementById('btn-accept-shared').addEventListener('click', () => {
           if (pendingSharedPayload) {
@@ -2412,14 +1957,14 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
             state.plan = pendingSharedPayload.plan;
             saveState();
             history.replaceState(null, '', window.location.pathname);
-            hideEl(document.getElementById('shared-plan-banner'));
+            document.getElementById('shared-plan-banner').classList.add('hidden');
             showDashboard();
             showToast('✅ Geteilter Wochenplan übernommen!');
           }
         });
         document.getElementById('btn-dismiss-shared').addEventListener('click', () => {
           history.replaceState(null, '', window.location.pathname);
-          hideEl(document.getElementById('shared-plan-banner'));
+          document.getElementById('shared-plan-banner').classList.add('hidden');
         });
       }
 
@@ -2427,8 +1972,7 @@ Antworte ausschließlich mit validem JSON gemäß Schema.`;
         initPWA();
         loadState();
         updateApiKeyStatusUI();
-        bindWizardEvents();
-        bindDashboardEvents();
+        bindAllEvents();
         checkUrlHashForSharedPlan();
 
         if (Array.isArray(state.plan) && state.plan.length > 0) {
