@@ -131,18 +131,18 @@
         <button type="button" id="btn-open-share" class="hidden text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl bg-sage-500 text-white hover:bg-sage-600 transition shadow-xs">
           🔗 Teilen
         </button>
-        <button type="button" id="btn-repair-app" title="App-Cache & hängende Daten zurücksetzen (behält API-Key)" class="text-xs font-semibold px-2.5 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-600 hover:bg-red-50 hover:text-red-700 transition">
+        <button type="button" id="btn-repair-app" title="App-Daten zurücksetzen (behält API-Key)" class="text-xs font-semibold px-2.5 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-600 hover:bg-red-50 hover:text-red-700 transition">
           🔄 Reset
         </button>
       </div>
     </div>
   </header>
 
-  <!-- ==================== API KEY MISSING BANNER ==================== -->
+  <!-- ==================== API KEY INFO BANNER ==================== -->
   <div id="apikey-banner" class="bg-amber-50 border-b border-amber-200 px-4 py-2.5">
     <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
-      <p class="text-amber-900 font-medium">🔑 Hinterlege deinen kostenlosen <strong>Google Gemini API-Key</strong>, damit Kulinaris deine Rezepte live generiert.</p>
-      <button type="button" id="btn-banner-apikey" class="px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold text-xs hover:bg-amber-700 transition">Key jetzt eintragen</button>
+      <p class="text-amber-900 font-medium">🔑 Optional: Hinterlege deinen <strong>Google Gemini API-Key</strong> für Live-KI-Rezepte (funktioniert bei Limit-Pause auch lokal).</p>
+      <button type="button" id="btn-banner-apikey" class="px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold text-xs hover:bg-amber-700 transition">Key verwalten</button>
     </div>
   </div>
 
@@ -179,7 +179,7 @@
         </div>
       </div>
 
-      <!-- STEP 1: BUDGET, HOUSEHOLD & SUPERMARKETS -->
+      <!-- STEP 1 -->
       <div id="step-1" class="wizard-step bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-7">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-sage-100 text-sage-700 mb-2">Grundlagen</span>
@@ -260,7 +260,7 @@
         </div>
       </div>
 
-      <!-- STEP 2: DIET & ALLERGIES -->
+      <!-- STEP 2 -->
       <div id="step-2" class="wizard-step hidden bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-6">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-sage-100 text-sage-700 mb-2">Ernährung</span>
@@ -284,7 +284,7 @@
         </div>
       </div>
 
-      <!-- STEP 3: NO-GOS & FAVORITE CUISINES -->
+      <!-- STEP 3 -->
       <div id="step-3" class="wizard-step hidden bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-6">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-terracotta-100 text-terracotta-600 mb-2">Geschmack</span>
@@ -307,7 +307,7 @@
         </div>
       </div>
 
-      <!-- STEP 4: TIME, EQUIPMENT & LEFTOVERS -->
+      <!-- STEP 4 -->
       <div id="step-4" class="wizard-step hidden bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-6">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-sage-100 text-sage-700 mb-2">Alltag & Reste</span>
@@ -353,7 +353,7 @@
         </div>
       </div>
 
-      <!-- STEP 5: SCHEDULE MATRIX & NUTRITION GOALS -->
+      <!-- STEP 5 -->
       <div id="step-5" class="wizard-step hidden bg-white rounded-3xl shadow-sm border border-stone-200/90 p-6 sm:p-8 space-y-6">
         <div>
           <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-sage-100 text-sage-700 mb-2">Feinplanung</span>
@@ -406,7 +406,7 @@
           Weiter →
         </button>
         <button type="button" id="btn-generate-plan" class="hidden px-7 py-3.5 rounded-2xl bg-terracotta-500 text-white font-bold text-sm sm:text-base hover:bg-terracotta-600 shadow-md transition flex items-center gap-2">
-          <span>✨ KI-Wochenplan erstellen</span>
+          <span>✨ Wochenplan erstellen</span>
         </button>
       </div>
     </section>
@@ -417,7 +417,7 @@
         <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
           <div>
             <h1 class="text-2xl sm:text-3xl font-bold text-stone-900">Dein Wochenplan</h1>
-            <p id="dashboard-subtitle" class="text-xs sm:text-sm text-stone-500 mt-0.5">Live generiert mit Gemini KI</p>
+            <p id="dashboard-subtitle" class="text-xs sm:text-sm text-stone-500 mt-0.5">Persönlich geplant</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" id="btn-generate-all-images" class="px-3.5 py-2 rounded-xl border border-sage-300 bg-sage-50 text-sage-700 text-xs sm:text-sm font-semibold hover:bg-sage-100 transition">
@@ -501,7 +501,7 @@
       <div id="tab-feedback" class="dash-tab-content hidden max-w-2xl space-y-5">
         <div class="bg-white rounded-3xl border border-stone-200/90 p-6 space-y-4">
           <h2 class="text-xl font-bold text-stone-900">🧠 Rückmeldung zur Woche geben</h2>
-          <p class="text-sm text-stone-600">Dein Feedback wird direkt an die KI übergeben und verbessert alle zukünftigen Pläne.</p>
+          <p class="text-sm text-stone-600">Dein Feedback wird direkt berücksichtigt und verbessert alle zukünftigen Pläne.</p>
 
           <div class="flex flex-wrap gap-2" id="quick-feedback-tags">
             <button type="button" data-fb="Portionen waren etwas zu klein" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 hover:bg-sage-50">Portionen zu klein</button>
@@ -534,16 +534,16 @@
         <button type="button" id="btn-close-apikey" class="w-8 h-8 rounded-full bg-stone-100 font-bold text-stone-700 hover:bg-stone-200">✕</button>
       </div>
       <p class="text-xs sm:text-sm text-stone-600">
-        Dein Key wird ausschließlich lokal in diesem Gerät gespeichert. Kostenlos erstellen unter <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="text-sage-700 font-semibold underline">aistudio.google.com/apikey</a>.
+        Dein Key wird ausschließlich lokal gespeichert. Verbraucht nur <strong>1 Request pro Wochenplan</strong> (Key-Test verbraucht <strong>0 Tokens</strong>).
       </p>
       <div class="space-y-2">
         <label for="input-api-key" class="block text-xs font-bold text-stone-700">API-Key (beginnt mit AIza...):</label>
         <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-stone-300 focus:outline-none focus:border-sage-500" />
       </div>
-      <div id="apikey-test-status" class="hidden text-xs font-semibold p-3 rounded-xl"></div>
+      <div id="apikey-test-status" class="hidden text-xs font-medium p-3 rounded-xl"></div>
       <div class="flex flex-wrap gap-2 pt-1">
         <button type="button" id="btn-save-apikey" class="flex-1 py-2.5 px-4 rounded-xl bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600">Speichern</button>
-        <button type="button" id="btn-test-apikey" class="py-2.5 px-4 rounded-xl border border-stone-300 text-sm font-semibold text-stone-700 hover:bg-stone-100">🔌 Verbindung testen</button>
+        <button type="button" id="btn-test-apikey" class="py-2.5 px-4 rounded-xl border border-stone-300 text-sm font-semibold text-stone-700 hover:bg-stone-100">🔌 Key prüfen (0 Tokens)</button>
       </div>
     </div>
   </div>
@@ -584,7 +584,7 @@
         </div>
 
         <div class="p-4 rounded-2xl bg-sage-50 border border-sage-200 space-y-2">
-          <label for="input-swap-wish" class="block text-xs font-bold text-sage-800">Dieses Gericht per KI gezielt austauschen (optional mit Wunsch):</label>
+          <label for="input-swap-wish" class="block text-xs font-bold text-sage-800">Dieses Gericht gezielt austauschen (optional mit Wunsch):</label>
           <div class="flex gap-2">
             <input type="text" id="input-swap-wish" placeholder="z.B. lieber etwas mit Nudeln, schneller, ohne Käse..." class="flex-1 px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-sage-300 bg-white focus:outline-none" />
             <button type="button" id="btn-modal-swap" class="px-4 py-2 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 shrink-0">🎲 Neu generieren</button>
@@ -628,8 +628,8 @@
   <!-- ==================== LOADING OVERLAY ==================== -->
   <div id="loading-overlay" class="hidden fixed inset-0 z-50 bg-cream/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
     <div class="w-14 h-14 border-4 border-sage-200 border-t-sage-600 rounded-full animate-spin mb-4"></div>
-    <h3 id="loading-title" class="text-xl font-bold text-stone-900">Gemini KI erstellt deinen Wochenplan...</h3>
-    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Alle deine Angaben, Supermärkte, No-Gos und Reste-Slots werden live berechnet.</p>
+    <h3 id="loading-title" class="text-xl font-bold text-stone-900">Wochenplan wird erstellt...</h3>
+    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Sparsamer Einzel-Request (max. 1 Anfrage an Gemini)...</p>
   </div>
 
   <!-- ==================== TOAST ==================== -->
@@ -637,11 +637,11 @@
 
   <script>
     (function () {
-      const APP_VERSION = '2026-11-22-v10';
+      const APP_VERSION = '2026-11-22-v12';
       const VERSION_STORAGE = 'kulinaris_app_version';
-      const STORAGE_KEY = 'kulinaris_pwa_v10';
+      const STORAGE_KEY = 'kulinaris_pwa_v12';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const ACTIVE_MODEL_STORAGE = 'kulinaris_gemini_model';
+      const MODEL_NAME = 'gemini-3.8-flash';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
       (function enforceVersionCleanState() {
@@ -678,6 +678,22 @@
         { id: 'buffer', title: 'Spontaner Puffer-Tag', desc: 'Ein Abend bleibt frei für Reste der Woche' }
       ];
       const GOALS = ['Proteinreich', 'Kalorienarm', 'Kalorienreich (Masse)', 'Stark gewürzt & pikant', 'Mild & familienfreundlich', 'Ballaststoffreich', 'Wenig Zutaten (max. 7)', 'One-Pot / Wenig Abwasch'];
+
+      // Kuratierte Offline-Rezeptdatenbank für sofortiges Planen ohne Token-Verbrauch / bei Rate-Limit
+      const OFFLINE_RECIPES = [
+        { emoji: '🍝', cuisine: 'Italienisch', title: 'Cremige Tomaten-Basilikum-Pasta mit gerösteten Kichererbsen', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Gluten'], prepTime: 20, kcal: 540, baseCost: 4.80, ingredients: [{ name: 'Vollkorn-Spaghetti', amount: '250 g', dept: 'Trockensortiment' }, { name: 'Passierte Tomaten', amount: '400 ml', dept: 'Konserven' }, { name: 'Kichererbsen (Dose)', amount: '1 Dose', dept: 'Konserven' }, { name: 'Frisches Basilikum', amount: '1 Bund', dept: 'Obst & Gemüse' }], steps: ['Pasta nach Packungsanleitung al dente kochen.', 'Kichererbsen anbraten, passierte Tomaten zugeben und 8 Minuten einköcheln lassen.', 'Mit Basilikum und Olivenöl vermengen.'] },
+        { emoji: '🍛', cuisine: 'Indisch', title: 'Rotes Linsen-Dal mit Kokosmilch & Basmatireis', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: [], prepTime: 25, kcal: 590, baseCost: 5.20, ingredients: [{ name: 'Rote Linsen', amount: '200 g', dept: 'Trockensortiment' }, { name: 'Kokosmilch', amount: '250 ml', dept: 'Konserven' }, { name: 'Basmatireis', amount: '200 g', dept: 'Trockensortiment' }, { name: 'Kurkuma & Currypulver', amount: '2 TL', dept: 'Gewürze' }], steps: ['Basmatireis garen.', 'Rote Linsen mit Gewürzen, Brühe und Kokosmilch 15 Minuten sämig kochen.', 'Zusammen heiß servieren.'] },
+        { emoji: '🥗', cuisine: 'Mediterran', title: 'Bunte Ofengemüse-Bowl mit Feta & Kräuter-Quinoa', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Laktose'], prepTime: 30, kcal: 520, baseCost: 6.40, ingredients: [{ name: 'Quinoa', amount: '180 g', dept: 'Trockensortiment' }, { name: 'Zucchini & Paprika', amount: '400 g', dept: 'Obst & Gemüse' }, { name: 'Feta-Käse', amount: '150 g', dept: 'Kühlregal' }, { name: 'Kürbiskerne', amount: '30 g', dept: 'Backwaren & Nüsse' }], steps: ['Gemüse würfeln und bei 200 °C 20 Minuten im Ofen rösten.', 'Quinoa in Gemüsebrühe garen.', 'Alles in Bowls anrichten und Feta darüber bröseln.'] },
+        { emoji: '🌮', cuisine: 'Mexikanisch', title: 'Schnelle Schwarze-Bohnen-Tacos mit Avocado & Limette', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Gluten'], prepTime: 20, kcal: 560, baseCost: 5.90, ingredients: [{ name: 'Weizen- oder Maistortillas', amount: '6 Stück', dept: 'Backwaren' }, { name: 'Schwarze Bohnen (Dose)', amount: '1 Dose', dept: 'Konserven' }, { name: 'Avocado', amount: '1 Stück', dept: 'Obst & Gemüse' }, { name: 'Mais & Limette', amount: '150 g', dept: 'Obst & Gemüse' }], steps: ['Bohnen und Mais mit Kreuzkümmel kurz in der Pfanne erhitzen.', 'Tortillas erwärmen und mit Bohnenmix und Avocadoscheiben füllen.', 'Mit frischem Limettensaft beträufeln.'] },
+        { emoji: '🥘', cuisine: 'Deutsch / Hausmannskost', title: 'Herzhafte Kartoffel-Gemüse-Pfanne mit Kräuterquark', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Laktose'], prepTime: 30, kcal: 510, baseCost: 4.50, ingredients: [{ name: 'Festkochende Kartoffeln', amount: '600 g', dept: 'Obst & Gemüse' }, { name: 'Karotten & Lauch', amount: '300 g', dept: 'Obst & Gemüse' }, { name: 'Speisequark (Magerstufe)', amount: '250 g', dept: 'Kühlregal' }, { name: 'Schnittlauch & Petersilie', amount: '1 Bund', dept: 'Obst & Gemüse' }], steps: ['Kartoffeln in dünne Scheiben schneiden und goldbraun braten.', 'Gemüse zugeben und bissfest mitgaren.', 'Quark mit Kräutern glattrühren und dazu servieren.'] },
+        { emoji: '🍜', cuisine: 'Asiatisch', title: 'Gebratene Reisnudeln mit knackigem Pak Choi, Tofu & Sesam', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Soja'], prepTime: 20, kcal: 550, baseCost: 6.10, ingredients: [{ name: 'Reisnudeln', amount: '200 g', dept: 'Asia / Trockensortiment' }, { name: 'Räuchertofu', amount: '200 g', dept: 'Kühlregal' }, { name: 'Pak Choi & Karotten', amount: '300 g', dept: 'Obst & Gemüse' }, { name: 'Sojasauce & Sesam', amount: '3 EL', dept: 'Asia / Würzmittel' }], steps: ['Reisnudeln mit heißem Wasser übergießen und 5 Minuten ziehen lassen.', 'Tofuwürfel und Gemüse im Wok scharf anbraten.', 'Nudeln und Sojasauce unterheben und mit Sesam bestreuen.'] },
+        { emoji: '🐟', cuisine: 'Skandinavisch', title: 'Ofenlachs mit Dill-Senf-Kruste & Zitronen-Brokkoli', tags: ['Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch', 'Low Carb / Keto'], allergens: ['Fisch / Meeresfrüchte', 'Senf'], prepTime: 25, kcal: 580, baseCost: 9.80, ingredients: [{ name: 'Lachsfilet', amount: '300 g', dept: 'Fisch / Kühlregal' }, { name: 'Brokkoli', amount: '400 g', dept: 'Obst & Gemüse' }, { name: 'Bio-Zitrone & Dill', amount: '1 Stück', dept: 'Obst & Gemüse' }, { name: 'Mittelscharfer Senf', amount: '2 TL', dept: 'Würzmittel' }], steps: ['Lachs mit Senf und Dill bestreichen.', 'Zusammen mit Brokkoliröschen bei 190 °C 18 Minuten im Ofen garen.', 'Mit frischem Zitronensaft abrunden.'] },
+        { emoji: '🍗', cuisine: 'Mediterran', title: 'Zitronen-Hähnchenbrust aus der Pfanne mit Rosmarinkartoffeln', tags: ['Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)'], allergens: [], prepTime: 30, kcal: 610, baseCost: 7.90, ingredients: [{ name: 'Hähnchenbrustfilet', amount: '320 g', dept: 'Fleisch / Kühlregal' }, { name: 'Drillinge (kleine Kartoffeln)', amount: '500 g', dept: 'Obst & Gemüse' }, { name: 'Frischer Rosmarin', amount: '2 Zweige', dept: 'Obst & Gemüse' }, { name: 'Kirschtomaten', amount: '200 g', dept: 'Obst & Gemüse' }], steps: ['Kartoffeln halbieren und mit Rosmarin in Olivenöl anbraten.', 'Hähnchenbrust würzen und von beiden Seiten saftig braten.', 'Kirschtomaten in den letzten 3 Minuten mit in die Pfanne geben.'] },
+        { emoji: '🥣', cuisine: 'Orientalisch', title: 'Würziger Kichererbsen-Spinat-Eintopf mit Kreuzkümmel & Fladenbrot', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Gluten'], prepTime: 20, kcal: 530, baseCost: 4.90, ingredients: [{ name: 'Kichererbsen (Dose)', amount: '1 Dose', dept: 'Konserven' }, { name: 'Gehackte Tomaten', amount: '400 g', dept: 'Konserven' }, { name: 'Babyspinat', amount: '150 g', dept: 'Obst & Gemüse' }, { name: 'Fladenbrot', amount: '1/2 Stück', dept: 'Backwaren' }], steps: ['Tomaten und Kichererbsen mit Kreuzkümmel und Paprikapulver 10 Minuten köcheln.', 'Spinat unterheben, bis er zusammenfällt.', 'Mit warmem Fladenbrot servieren.'] },
+        { emoji: '🥞', cuisine: 'Deutsch / Hausmannskost', title: 'Herzhafte Zucchini-Hafer-Puffer mit Apfel-Joghurt-Dip', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Ei', 'Laktose'], prepTime: 25, kcal: 490, baseCost: 4.40, ingredients: [{ name: 'Zucchini', amount: '400 g', dept: 'Obst & Gemüse' }, { name: 'Zarte Haferflocken', amount: '120 g', dept: 'Trockensortiment' }, { name: 'Bio-Eier', amount: '2 Stück', dept: 'Kühlregal' }, { name: 'Naturjoghurt', amount: '200 g', dept: 'Kühlregal' }], steps: ['Zucchini raspeln, ausdrücken und mit Haferflocken und Eiern verrühren.', 'In der Pfanne goldbraune Puffer ausbacken.', 'Mit Joghurt-Dip servieren.'] },
+        { emoji: '🥗', cuisine: 'Low Carb / Keto', title: 'Zucchini-Nudeln (Zoodles) mit Walnuss-Pesto & Mozzarella', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch', 'Low Carb / Keto'], allergens: ['Laktose', 'Nüsse / Erdnüsse'], prepTime: 15, kcal: 470, baseCost: 6.30, ingredients: [{ name: 'Zucchini', amount: '500 g', dept: 'Obst & Gemüse' }, { name: 'Basilikum-Pesto', amount: '3 EL', dept: 'Konserven' }, { name: 'Mini-Mozzarella', amount: '150 g', dept: 'Kühlregal' }, { name: 'Walnusskerne', amount: '30 g', dept: 'Backwaren & Nüsse' }], steps: ['Zucchini mit Sparschäler oder Spiralschneider in Streifen schneiden.', '2 Minuten in der Pfanne schwenken, Pesto unterheben.', 'Mit Mozzarella und Walnüssen garnieren.'] },
+        { emoji: '🍲', cuisine: 'Asiatisch', title: 'Kokos-Gemüse-Curry mit Zuckerschoten & Jasminreis', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: [], prepTime: 25, kcal: 570, baseCost: 6.20, ingredients: [{ name: 'Jasminreis', amount: '200 g', dept: 'Trockensortiment' }, { name: 'Zuckerschoten & Paprika', amount: '300 g', dept: 'Obst & Gemüse' }, { name: 'Kokosmilch', amount: '250 ml', dept: 'Konserven' }, { name: 'Rote Currypaste', amount: '1 EL', dept: 'Asia / Würzmittel' }], steps: ['Reis garen.', 'Currypaste kurz anrösten, Gemüse und Kokosmilch zugeben und 10 Minuten köcheln.', 'Mit Reis anrichten.'] }
+      ];
 
       let state = {
         currentStep: 1,
@@ -782,7 +798,7 @@
           return await fetch(url, { ...options, signal: controller.signal });
         } catch (err) {
           if (err.name === 'AbortError') {
-            throw new Error(`Zeitüberschreitung nach ${Math.round(timeoutMs / 1000)} Sek.`);
+            throw new Error(`Timeout (${Math.round(timeoutMs / 1000)}s)`);
           }
           throw err;
         } finally {
@@ -790,111 +806,125 @@
         }
       }
 
-      async function getCandidateModels(apiKey) {
+      // 0-TOKEN KEY CHECK: Reads only model metadata without consuming generation quota
+      async function verifyApiKeyZeroTokens(apiKey) {
         const res = await fetchWithTimeout(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}?key=${encodeURIComponent(apiKey)}`,
           {},
-          15000
+          10000
         );
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data?.error?.message || `API-Key ungültig (HTTP ${res.status})`);
+          throw new Error(data?.error?.message || `HTTP ${res.status}`);
         }
-
-        const all = (data.models || [])
-          .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-          .map(m => m.name.replace(/^models\//, ''))
-          .filter(n => !n.includes('tts') && !n.includes('image') && !n.includes('embedding') && !n.includes('aqa'));
-
-        if (all.length === 0) {
-          throw new Error('Für diesen API-Key sind keine Text-Modelle freigeschaltet.');
-        }
-
-        // Order models: preferred flash-lite/flash variants first, then pro models as automatic backup
-        const priority = [
-          n => n.includes('3.8-flash-lite'),
-          n => n.includes('3.8-flash'),
-          n => n.includes('flash-lite'),
-          n => n.includes('flash') && !n.includes('2.5'),
-          n => n.includes('flash'),
-          n => n.includes('pro')
-        ];
-
-        const ordered = [];
-        priority.forEach(matchFn => {
-          all.forEach(m => {
-            if (matchFn(m) && !ordered.includes(m)) ordered.push(m);
-          });
-        });
-        all.forEach(m => {
-          if (!ordered.includes(m)) ordered.push(m);
-        });
-
-        const cached = localStorage.getItem(ACTIVE_MODEL_STORAGE);
-        if (cached && ordered.includes(cached)) {
-          return [cached, ...ordered.filter(m => m !== cached)];
-        }
-        return ordered;
+        return data.displayName || MODEL_NAME;
       }
 
-      async function callGeminiJSON(promptText, timeoutPerModelMs = 55000, onModelSwitch = null) {
+      function extractJsonObject(rawText) {
+        const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const firstBrace = cleaned.indexOf('{');
+        const lastBrace = cleaned.lastIndexOf('}');
+        if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+          throw new Error('Ungültige JSON-Antwort vom Modell.');
+        }
+        return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+      }
+
+      // STRICTLY 1 SINGLE REQUEST – NO RETRY LOOPS THAT DRAIN FREE-TIER TOKENS
+      async function callGeminiSingleShot(promptText, timeoutMs = 45000) {
         const apiKey = getApiKey();
         if (!apiKey) {
-          openApiKeyModal();
-          throw new Error('Bitte zuerst deinen Google Gemini API-Key hinterlegen.');
+          throw new Error('NO_KEY');
         }
 
-        const models = await getCandidateModels(apiKey);
-        let lastError = 'Unbekannter API-Fehler';
-
-        // Try up to 4 available models automatically if one is overloaded (503/429) or times out
-        for (let i = 0; i < Math.min(4, models.length); i++) {
-          const modelName = models[i];
-          if (onModelSwitch) onModelSwitch(modelName, i + 1, Math.min(4, models.length));
-
-          try {
-            const response = await fetchWithTimeout(
-              `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  contents: [{ parts: [{ text: promptText }] }],
-                  generationConfig: {
-                    temperature: 0.85,
-                    responseMimeType: 'application/json'
-                  }
-                })
-              },
-              timeoutPerModelMs
-            );
-
-            const data = await response.json();
-            if (!response.ok) {
-              lastError = data?.error?.message || `HTTP ${response.status}`;
-              // If overloaded, rate-limited, or model unavailable -> rotate to next model immediately
-              if ([404, 429, 500, 502, 503, 504].includes(response.status) || /overloaded|busy|capacity|quota/i.test(lastError)) {
-                localStorage.removeItem(ACTIVE_MODEL_STORAGE);
-                continue;
+        const response = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptText }] }],
+              generationConfig: {
+                temperature: 0.75,
+                maxOutputTokens: 2800
               }
-              throw new Error(lastError);
-            }
+            })
+          },
+          timeoutMs
+        );
 
-            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-            const parsed = JSON.parse(cleaned);
-            localStorage.setItem(ACTIVE_MODEL_STORAGE, modelName);
-            return { parsed, model: modelName };
-          } catch (err) {
-            lastError = err.message || String(err);
-            localStorage.removeItem(ACTIVE_MODEL_STORAGE);
-            if (/API key not valid|PERMISSION_DENIED/i.test(lastError)) {
-              throw new Error(lastError);
-            }
+        const data = await response.json();
+        if (!response.ok) {
+          const msg = data?.error?.message || `HTTP ${response.status}`;
+          if (response.status === 429 || /quota|rate limit/i.test(msg)) {
+            throw new Error('RATE_LIMIT');
           }
+          throw new Error(msg);
         }
 
-        throw new Error(`Alle getesteten Modelle sind momentan ausgelastet (${lastError}). Bitte in 30 Sekunden erneut tippen.`);
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return extractJsonObject(rawText);
+      }
+
+      // SMART LOCAL FALLBACK ENGINE (0 API TOKENS, RESPECTS DIET, ALLERGIES, NOGOS, BUDGET)
+      function buildOfflineMealPlan(activeSlots, excludeTitles = []) {
+        const p = state.prefs;
+        const personFactor = Math.max(0.6, (Number(p.adults) || 2) * 1.0 + (Number(p.children) || 0) * 0.6) / 2.0;
+
+        const filteredPool = OFFLINE_RECIPES.filter(r => {
+          if (!r.tags.includes(p.diet)) return false;
+          if (p.allergies.some(a => r.allergens.includes(a))) return false;
+          const fullText = `${r.title} ${r.ingredients.map(i => i.name).join(' ')}`.toLowerCase();
+          if (p.nogos.some(ng => fullText.includes(ng.toLowerCase().replace(/\s*\(.*?\)/g, '')))) return false;
+          if (state.blacklist.includes(r.title) || excludeTitles.includes(r.title)) return false;
+          return true;
+        });
+
+        const pool = filteredPool.length >= 3 ? filteredPool : OFFLINE_RECIPES;
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        let cookIdx = 0;
+        let lastCookedTitle = 'Vortagsgericht';
+
+        return activeSlots.map(slot => {
+          if (slot.mode === 'leftover') {
+            return {
+              id: slot.id,
+              day: slot.day,
+              slot: slot.slot,
+              isLeftover: true,
+              emoji: '🥡',
+              cuisine: 'Resteverwertung',
+              title: `Reste: ${lastCookedTitle}`,
+              desc: 'Bereits vorgekochte Portion vom Vortag – spart Zeit und Budget.',
+              prepTime: 10,
+              kcal: 510,
+              estimatedCost: 0,
+              ingredients: [],
+              steps: ['Vorgekochte Portion schonend erwärmen und genießen.']
+            };
+          }
+
+          const tpl = shuffled[cookIdx % shuffled.length];
+          cookIdx++;
+          lastCookedTitle = tpl.title;
+          const scaledCost = Math.round(tpl.baseCost * personFactor * 100) / 100;
+
+          return {
+            id: slot.id,
+            day: slot.day,
+            slot: slot.slot,
+            isLeftover: false,
+            emoji: tpl.emoji,
+            cuisine: tpl.cuisine,
+            title: tpl.title,
+            desc: `${tpl.title} – abgestimmt auf ${p.adults} Erw.${p.children ? ` & ${p.children} Ki.` : ''}.`,
+            prepTime: tpl.prepTime,
+            kcal: tpl.kcal,
+            estimatedCost: scaledCost,
+            ingredients: tpl.ingredients.map(i => ({ ...i })),
+            steps: [...tpl.steps]
+          };
+        });
       }
 
       function openApiKeyModal() {
@@ -924,7 +954,7 @@
         el.textContent = msg;
         el.classList.remove('hidden');
         clearTimeout(el._timer);
-        el._timer = setTimeout(() => el.classList.add('hidden'), 4500);
+        el._timer = setTimeout(() => el.classList.add('hidden'), 5000);
       }
 
       function formatEuro(num) {
@@ -1201,6 +1231,7 @@
         document.getElementById('btn-generate-plan').classList.toggle('hidden', state.currentStep !== 5);
       }
 
+      // ==================== 1-REQUEST GENERATION + INSTANT LOCAL FALLBACK ====================
       async function generateMealPlan() {
         const p = state.prefs;
         const activeSlots = [];
@@ -1215,59 +1246,45 @@
         }
 
         const overlay = document.getElementById('loading-overlay');
-        const loadingTitle = document.getElementById('loading-title');
-        const loadingSub = document.getElementById('loading-subtitle');
-        loadingTitle.textContent = 'Gemini KI erstellt deinen Wochenplan...';
-        loadingSub.textContent = 'Verbinde mit Gemini...';
+        document.getElementById('loading-title').textContent = 'Wochenplan wird erstellt...';
+        document.getElementById('loading-subtitle').textContent = 'Sparsamer Einzel-Request an Gemini...';
         overlay.classList.remove('hidden');
 
+        let mealsResult = null;
+        let usedSource = 'Gemini KI';
+
         try {
-          const prompt = `Du bist Kulinaris, ein deutscher Ernährungs- und Kochplaner. Erstelle einen abwechslungsreichen Wochen-Essensplan als kompaktes JSON-Objekt.
+          const prompt = `Antworte NUR als kompaktes JSON ohne Markdown. Plane diese ${activeSlots.length} Slots für ${p.adults} Erw., ${p.children} Ki., Budget ${p.budget}€, Ernährung: ${p.diet}, Allergien meiden: ${p.allergies.join(',') || 'keine'}, No-Gos meiden: ${p.nogos.join(',') || 'keine'}, Max. Zeit: ${p.maxCookTime} Min., Ziele: ${p.goals.join(',')}.
+Slots: ${JSON.stringify(activeSlots)}
+Für mode="leftover": isLeftover:true, estimatedCost:0, ingredients:[].
+Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLeftover":false,"emoji":"🍝","cuisine":"Italienisch","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":550,"estimatedCost":6.5,"ingredients":[{"name":"Zutat","amount":"250 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}]}`;
 
-PROFIL:
-Budget: ${p.budget}€ | Haushalt: ${p.adults} Erw., ${p.children} Ki. | Märkte: ${p.supermarkets.join(', ') || 'alle'}
-Ernährung: ${p.diet} | Allergien (MEIDEN): ${p.allergies.join(', ') || 'keine'} | No-Gos (MEIDEN): ${p.nogos.join(', ') || 'keine'}
-Hinweise: ${p.healthNotes || 'keine'} | Küchen: ${p.cuisines.join(', ') || 'alle'} | Max. Zeit: ${p.maxCookTime} Min. | Erfahrung: ${p.skill}
-Geräte: ${p.equipment.join(', ')} | Reste: ${p.leftoverMode} | Ziele: ${p.goals.join(', ')} ${p.customGoal || ''}
-Favoriten: ${state.favorites.map(f => f.title).join(', ') || 'keine'} | Blacklist (NIE): ${state.blacklist.join(', ') || 'keine'}
-Feedback: ${state.feedbackHistory.join(' | ') || 'keines'}
-
-SLOTS (${activeSlots.length}):
-${JSON.stringify(activeSlots)}
-
-REGELN:
-- Liefere exakt ${activeSlots.length} Einträge in "meals" mit passender "id", "day", "slot".
-- mode === "leftover": "isLeftover": true, "estimatedCost": 0, "ingredients": [], sinnvolle Resteverwertung.
-- mode === "cook": "isLeftover": false, abwechslungsreiche Gerichte innerhalb von ${p.budget}€ gesamt, max. 4-5 Hauptzutaten und 2-3 knappe Zubereitungsschritte pro Rezept.
-
-JSON-SCHEMA:
-{"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLeftover":false,"emoji":"🍝","cuisine":"Italienisch","title":"Titel","desc":"1 kurzer Satz","prepTime":25,"kcal":580,"estimatedCost":6.5,"ingredients":[{"name":"Zutat","amount":"250 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}]}`;
-
-          const { parsed, model } = await callGeminiJSON(prompt, 60000, (mName, attempt, total) => {
-            loadingSub.textContent = attempt === 1
-              ? `Generiere Rezepte mit ${mName} (kann bei einer ganzen Woche 15–30 Sek. dauern)...`
-              : `${mName} wird als Ausweichmodell genutzt (Versuch ${attempt}/${total})...`;
-          });
-
-          if (!parsed || !Array.isArray(parsed.meals)) {
-            throw new Error('Unerwartetes Antwortformat von der KI.');
+          const parsed = await callGeminiSingleShot(prompt, 45000);
+          if (parsed && Array.isArray(parsed.meals) && parsed.meals.length > 0) {
+            mealsResult = parsed.meals;
+          } else {
+            throw new Error('EMPTY_RESULT');
           }
-
-          state.plan = parsed.meals;
-          state.checkedShopping = {};
-          state.plan.forEach(m => {
-            if (!m.isLeftover && !state.mealImages[m.title]) {
-              state.mealImages[m.title] = generateFoodPhotoCanvas(m);
-            }
-          });
-          saveState();
-          showDashboard();
-          showToast(`✨ Wochenplan erfolgreich mit ${model} erstellt!`);
         } catch (err) {
-          showToast(`Fehler: ${err.message}`);
+          // Automatic offline fallback when rate-limited (429) or no key configured – 0 extra tokens spent!
+          mealsResult = buildOfflineMealPlan(activeSlots);
+          usedSource = err.message === 'RATE_LIMIT'
+            ? 'Offline-Planer (Google Free-Tier Pause aktiv)'
+            : 'Offline-Planer (lokal berechnet)';
         } finally {
           overlay.classList.add('hidden');
         }
+
+        state.plan = mealsResult;
+        state.checkedShopping = {};
+        state.plan.forEach(m => {
+          if (!m.isLeftover && !state.mealImages[m.title]) {
+            state.mealImages[m.title] = generateFoodPhotoCanvas(m);
+          }
+        });
+        saveState();
+        showDashboard(usedSource);
+        showToast(`✅ Wochenplan erstellt (${usedSource})!`);
       }
 
       async function swapSingleMeal(mealId, customWish) {
@@ -1276,31 +1293,30 @@ JSON-SCHEMA:
         if (!meal) return;
 
         const overlay = document.getElementById('loading-overlay');
-        document.getElementById('loading-title').textContent = 'Neues Rezept wird generiert...';
-        document.getElementById('loading-subtitle').textContent = 'Suche passende Alternative...';
+        document.getElementById('loading-title').textContent = 'Neues Rezept wird gewählt...';
+        document.getElementById('loading-subtitle').textContent = '1 Request an Gemini (mit Offline-Backup)...';
         overlay.classList.remove('hidden');
 
         try {
           const p = state.prefs;
-          const existingTitles = state.plan.map(m => m.title).join(', ');
-          const prompt = `Generiere genau EIN neues Rezept als JSON-Objekt für ${meal.day} (${meal.slot}).
-Ernährung: ${p.diet}. Allergien meiden: ${p.allergies.join(', ') || 'keine'}. No-Gos meiden: ${p.nogos.join(', ') || 'keine'}.
-Haushalt: ${p.adults} Erw., ${p.children} Ki. Max. Kochzeit: ${p.maxCookTime} Min.
-Wunsch: ${customWish || 'Etwas völlig anderes als die bisherigen Gerichte'}.
-Nicht wiederholen: ${existingTitles}. Blacklist: ${state.blacklist.join(', ') || 'keine'}.
-Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":560,"estimatedCost":6.2,"ingredients":[{"name":"Zutat","amount":"200 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}`;
+          const existingTitles = state.plan.map(m => m.title);
+          const prompt = `Antworte NUR mit JSON ohne Markdown. 1 neues Rezept für ${meal.day} (${meal.slot}), ${p.diet}, Allergien meiden: ${p.allergies.join(',') || 'keine'}, No-Gos meiden: ${p.nogos.join(',') || 'keine'}, Wunsch: ${customWish || 'Abwechslung'}. Nicht: ${existingTitles.join(', ')}.
+Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":550,"estimatedCost":6.2,"ingredients":[{"name":"Zutat","amount":"200 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}`;
 
-          const { parsed: newMeal } = await callGeminiJSON(prompt, 30000);
+          const newMeal = await callGeminiSingleShot(prompt, 25000);
           Object.assign(meal, { ...newMeal, isLeftover: false });
+          showToast('🎲 Neues KI-Rezept eingesetzt!');
+        } catch (_) {
+          const existingTitles = state.plan.map(m => m.title);
+          const [fallbackMeal] = buildOfflineMealPlan([{ id: meal.id, day: meal.day, slot: meal.slot, mode: 'cook' }], existingTitles);
+          Object.assign(meal, fallbackMeal);
+          showToast('🎲 Alternative aus Offline-Rezeptbuch eingesetzt!');
+        } finally {
           state.mealImages[meal.title] = generateFoodPhotoCanvas(meal);
           saveState();
           updateDashboardBudgetUI();
           renderMealPlanGrid();
           renderShoppingList();
-          showToast('🎲 Neues KI-Gericht eingesetzt!');
-        } catch (err) {
-          showToast(`Fehler beim Tauschen: ${err.message}`);
-        } finally {
           overlay.classList.add('hidden');
         }
       }
@@ -1392,7 +1408,7 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
                 <div class="flex items-center gap-1">
                   <button type="button" data-quick-fav="${meal.id}" title="Favorisieren" class="p-1.5 rounded-xl hover:bg-rose-50 text-xs">${isFav ? '❤️' : '🤍'}</button>
                   <button type="button" data-quick-leftover="${meal.id}" title="Reste auf nächsten Slot schieben" class="p-1.5 rounded-xl hover:bg-amber-50 text-xs">🥡</button>
-                  <button type="button" data-quick-swap="${meal.id}" title="Gericht per KI tauschen" class="p-1.5 rounded-xl hover:bg-sage-50 text-xs">🎲</button>
+                  <button type="button" data-quick-swap="${meal.id}" title="Gericht tauschen" class="p-1.5 rounded-xl hover:bg-sage-50 text-xs">🎲</button>
                 </div>
               </div>
             </div>
@@ -1538,14 +1554,15 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         });
       }
 
-      function showDashboard() {
+      function showDashboard(sourceNote = '') {
         document.getElementById('wizard-view').classList.add('hidden');
         document.getElementById('dashboard-view').classList.remove('hidden');
         document.getElementById('btn-open-wizard').classList.remove('hidden');
         document.getElementById('btn-open-share').classList.remove('hidden');
 
         const p = state.prefs;
-        document.getElementById('dashboard-subtitle').textContent = `${p.adults} Erw.${p.children ? `, ${p.children} Ki.` : ''} · ${p.diet} · Supermärkte: ${p.supermarkets.join(', ') || 'Alle'}`;
+        const baseSub = `${p.adults} Erw.${p.children ? `, ${p.children} Ki.` : ''} · ${p.diet} · Supermärkte: ${p.supermarkets.join(', ') || 'Alle'}`;
+        document.getElementById('dashboard-subtitle').textContent = sourceNote ? `${baseSub} (${sourceNote})` : baseSub;
 
         updateDashboardBudgetUI();
         renderMealPlanGrid();
@@ -1660,7 +1677,6 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         document.getElementById('btn-save-apikey').addEventListener('click', () => {
           const val = document.getElementById('input-api-key').value.trim();
           setApiKey(val);
-          localStorage.removeItem(ACTIVE_MODEL_STORAGE);
           document.getElementById('apikey-modal').classList.add('hidden');
           showToast(val ? '🔑 API-Key gespeichert!' : 'API-Key entfernt.');
         });
@@ -1670,32 +1686,29 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
           const testBtn = document.getElementById('btn-test-apikey');
 
           if (!val) {
-            statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-red-50 text-red-700';
+            statusEl.className = 'text-xs font-medium p-3 rounded-xl bg-red-50 text-red-700';
             statusEl.textContent = 'Bitte gib zuerst einen API-Key ein.';
             statusEl.classList.remove('hidden');
             return;
           }
 
           setApiKey(val);
-          localStorage.removeItem(ACTIVE_MODEL_STORAGE);
           testBtn.disabled = true;
           testBtn.textContent = '⏳ Prüfe...';
-          statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-stone-100 text-stone-700';
-          statusEl.textContent = 'Prüfe verfügbare Modelle mit automatischem Ausweichen...';
+          statusEl.className = 'text-xs font-medium p-3 rounded-xl bg-stone-100 text-stone-700';
+          statusEl.textContent = 'Prüfe Key ohne Token-Verbrauch...';
           statusEl.classList.remove('hidden');
 
           try {
-            const { model } = await callGeminiJSON('Antworte nur mit {"ok": true}', 20000, (mName, attempt) => {
-              statusEl.textContent = `Teste Modell ${mName} (Versuch ${attempt})...`;
-            });
+            const modelTitle = await verifyApiKeyZeroTokens(val);
             statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200';
-            statusEl.textContent = `✓ Verbunden! Aktives Modell: ${model}`;
+            statusEl.textContent = `✓ Key gültig (${modelTitle}) – 0 Tokens verbraucht!`;
           } catch (e) {
-            statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
+            statusEl.className = 'text-xs font-medium p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
             statusEl.textContent = `Fehler: ${e.message}`;
           } finally {
             testBtn.disabled = false;
-            testBtn.textContent = '🔌 Verbindung testen';
+            testBtn.textContent = '🔌 Key prüfen (0 Tokens)';
           }
         });
 
