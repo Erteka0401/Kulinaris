@@ -634,7 +634,7 @@
 
   <script>
     (function () {
-      const STORAGE_KEY = 'kulinaris_pwa_v6';
+      const STORAGE_KEY = 'kulinaris_pwa_v7';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
       const ACTIVE_MODEL_STORAGE = 'kulinaris_gemini_model';
       const DEFAULT_MODEL = 'gemini-3.8-flash';
@@ -696,7 +696,6 @@
       let pendingSharedPayload = null;
       let deferredInstallPrompt = null;
 
-      // ==================== PWA MANIFEST & SERVICE WORKER ====================
       function initPWA() {
         const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#4A7C59"/><text x="256" y="345" font-family="Georgia,serif" font-size="300" font-weight="bold" fill="#FAF8F5" text-anchor="middle">K</text></svg>`;
         const iconUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(iconSvg);
@@ -734,7 +733,6 @@
         });
       }
 
-      // ==================== API KEY & GEMINI REST CLIENT ====================
       function getApiKey() {
         return (localStorage.getItem(API_KEY_STORAGE) || '').trim();
       }
@@ -805,7 +803,6 @@
 
         let response = await makeRequest(model);
 
-        // If cached model was deprecated or rejected, clear cache and retry with auto-discovered model
         if (!response.ok && (response.status === 404 || response.status === 400)) {
           localStorage.removeItem(ACTIVE_MODEL_STORAGE);
           const freshModel = await resolveWorkingModel(apiKey);
@@ -832,7 +829,6 @@
         document.getElementById('apikey-modal').classList.remove('hidden');
       }
 
-      // ==================== STATE & HELPERS ====================
       function loadState() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
@@ -871,7 +867,6 @@
         return 0;
       }
 
-      // ==================== WIZARD NUMBERS & CONTROLS ====================
       function updateSliderTrack(slider) {
         if (!slider) return;
         const min = Number(slider.min) || 0;
@@ -1132,7 +1127,6 @@
         document.getElementById('btn-generate-plan').classList.toggle('hidden', state.currentStep !== 5);
       }
 
-      // ==================== LIVE GEMINI MEAL PLAN GENERATION ====================
       async function generateMealPlan() {
         const p = state.prefs;
         const activeSlots = [];
@@ -1295,7 +1289,6 @@ JSON-Format:
         return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
       }
 
-      // ==================== DASHBOARD UI ====================
       function getTotalEstimatedCost() {
         if (!Array.isArray(state.plan)) return 0;
         return state.plan.reduce((sum, m) => sum + (m.isLeftover ? 0 : parsePrice(m.estimatedCost)), 0);
@@ -1612,7 +1605,6 @@ JSON-Format:
           else showWizard();
         });
 
-        // API Key Modal
         document.getElementById('btn-open-apikey').addEventListener('click', openApiKeyModal);
         document.getElementById('btn-banner-apikey').addEventListener('click', openApiKeyModal);
         document.getElementById('btn-close-apikey').addEventListener('click', () => {
@@ -1651,7 +1643,6 @@ JSON-Format:
           }
         });
 
-        // Wizard Sliders & Counters
         const sliderBudget = document.getElementById('slider-budget');
         const handleBudget = (e) => {
           state.prefs.budget = Number(e.target.value);
@@ -1785,7 +1776,6 @@ JSON-Format:
         document.getElementById('btn-next-step').addEventListener('click', () => goToStep(state.currentStep + 1));
         document.getElementById('btn-generate-plan').addEventListener('click', () => generateMealPlan());
 
-        // Dashboard Events
         document.getElementById('btn-open-wizard').addEventListener('click', showWizard);
         document.getElementById('btn-regenerate-week').addEventListener('click', generateMealPlan);
 
