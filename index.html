@@ -152,7 +152,7 @@
       <p class="text-sm font-medium">📩 Dir wurde ein fertiger Wochenplan geteilt! Möchtest du ihn übernehmen?</p>
       <div class="flex items-center gap-2">
         <button type="button" id="btn-accept-shared" class="px-3.5 py-1.5 bg-white text-terracotta-600 font-bold text-xs rounded-xl shadow-sm hover:bg-stone-100">Plan übernehmen</button>
-        <button type="button" id="btn-dismiss-shared" class="px-3 py-1.5 bg-terracotta-600 text-white text-xs font-semibold rounded-xl hover:bg-terracotta-500">Verwerfen</button>
+        <button type="button" id="btn-dismiss-shared" class="px-3.5 py-1.5 bg-terracotta-600 text-white text-xs font-semibold rounded-xl hover:bg-terracotta-500">Verwerfen</button>
       </div>
     </div>
   </div>
@@ -663,7 +663,7 @@
         <button type="button" id="btn-close-apikey" class="w-8 h-8 rounded-full bg-stone-100 font-bold text-stone-700 hover:bg-stone-200">✕</button>
       </div>
       <p class="text-xs sm:text-sm text-stone-600">
-        Dein Key wird ausschließlich lokal gespeichert. Ermittelt automatisch ein verfügbares Gemini-Modell für deinen Key (Key-Test verbraucht <strong>0 Tokens</strong>).
+        Dein Key wird ausschließlich lokal gespeichert. Ermittelt automatisch ein verfügbares Gemini-Textmodell für deinen Key (Key-Test verbraucht <strong>0 Tokens</strong>).
       </p>
       <div class="space-y-2">
         <label for="input-api-key" class="block text-xs font-bold text-stone-700">API-Key (beginnt mit AIza...):</label>
@@ -767,12 +767,12 @@
 
   <script>
     (function () {
-      const APP_VERSION = '2026-11-22-v16';
+      const APP_VERSION = '2026-11-22-v17';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_MEMORY_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v16';
+      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v17';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v16';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v17';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
       (function migrateAndCleanSession() {
@@ -783,7 +783,7 @@
             try { mem = JSON.parse(localStorage.getItem(PROFILE_MEMORY_KEY) || '{}'); } catch (_) {}
 
             Object.keys(localStorage).forEach(k => {
-              if (k.startsWith('kulinaris_pwa_v') || k.startsWith('kulinaris_active_plan_v')) {
+              if (k.startsWith('kulinaris_pwa_v') || k.startsWith('kulinaris_active_plan_v') || k.startsWith('kulinaris_resolved_model')) {
                 try {
                   const old = JSON.parse(localStorage.getItem(k) || '{}');
                   if (!mem.favorites && Array.isArray(old.favorites)) mem.favorites = old.favorites;
@@ -946,10 +946,11 @@
         }
       }
 
-      // Discovers an actual model available for this API key via ListModels
       async function resolveAvailableModel(apiKey) {
         const cached = localStorage.getItem(MODEL_CACHE_KEY);
-        if (cached) return cached;
+        if (cached && !/(image|tts|embedding|live|aqa|vision)/i.test(cached)) {
+          return cached;
+        }
 
         const res = await fetchWithTimeout(
           `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
@@ -964,10 +965,12 @@
         const models = (data.models || [])
           .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
           .map(m => m.name.replace(/^models\//, ''))
-          .filter(n => !n.includes('image') && !n.includes('tts') && !n.includes('embedding'));
+          .filter(n => !/(image|tts|embedding|live|aqa|vision)/i.test(n));
 
-        // Prefer lightweight/fast flash variants first, then any flash, then first available model
-        const picked = models.find(n => n.includes('flash-lite'))
+        const picked = models.find(n => n === 'gemini-3.5-flash-lite')
+          || models.find(n => n.includes('3.5-flash-lite'))
+          || models.find(n => n.includes('flash-lite'))
+          || models.find(n => n === 'gemini-3.8-flash')
           || models.find(n => n.includes('flash'))
           || models[0];
 
