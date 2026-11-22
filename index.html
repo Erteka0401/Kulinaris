@@ -462,12 +462,10 @@
         </button>
       </div>
 
-      <!-- TAB: WOCHENPLAN -->
       <div id="tab-plan" class="dash-tab-content space-y-4">
         <div id="meal-plan-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
 
-      <!-- TAB: EINKAUFSLISTE -->
       <div id="tab-shopping" class="dash-tab-content hidden space-y-4">
         <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-7 space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
@@ -489,7 +487,6 @@
         </div>
       </div>
 
-      <!-- TAB: REZEPT-BIBLIOTHEK -->
       <div id="tab-library" class="dash-tab-content hidden space-y-6">
         <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-7 space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
@@ -581,7 +578,6 @@
         </div>
       </div>
 
-      <!-- TAB: FAVORITEN & BLACKLIST -->
       <div id="tab-favorites" class="dash-tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-6 space-y-4">
           <div class="flex items-center justify-between">
@@ -606,7 +602,6 @@
         </div>
       </div>
 
-      <!-- TAB: KI-LERNPROFIL & BACKUP -->
       <div id="tab-feedback" class="dash-tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white rounded-3xl border border-stone-200/90 p-6 space-y-4">
           <div class="flex items-center justify-between">
@@ -668,7 +663,7 @@
         <button type="button" id="btn-close-apikey" class="w-8 h-8 rounded-full bg-stone-100 font-bold text-stone-700 hover:bg-stone-200">✕</button>
       </div>
       <p class="text-xs sm:text-sm text-stone-600">
-        Dein Key wird ausschließlich lokal gespeichert. Schnelle 2-Etappen-Generierung ohne Thinking-Verzögerung (Key-Test verbraucht <strong>0 Tokens</strong>).
+        Dein Key wird ausschließlich lokal gespeichert. Ermittelt automatisch ein verfügbares Gemini-Modell für deinen Key (Key-Test verbraucht <strong>0 Tokens</strong>).
       </p>
       <div class="space-y-2">
         <label for="input-api-key" class="block text-xs font-bold text-stone-700">API-Key (beginnt mit AIza...):</label>
@@ -772,12 +767,12 @@
 
   <script>
     (function () {
-      const APP_VERSION = '2026-11-22-v15';
+      const APP_VERSION = '2026-11-22-v16';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_MEMORY_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v15';
+      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v16';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_NAME = 'gemini-3.8-flash-lite';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v16';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
       (function migrateAndCleanSession() {
@@ -919,6 +914,7 @@
 
       function setApiKey(key) {
         localStorage.setItem(API_KEY_STORAGE, key.trim());
+        localStorage.removeItem(MODEL_CACHE_KEY);
         updateApiKeyStatusUI();
       }
 
@@ -950,9 +946,13 @@
         }
       }
 
-      async function verifyApiKeyZeroTokens(apiKey) {
+      // Discovers an actual model available for this API key via ListModels
+      async function resolveAvailableModel(apiKey) {
+        const cached = localStorage.getItem(MODEL_CACHE_KEY);
+        if (cached) return cached;
+
         const res = await fetchWithTimeout(
-          `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}?key=${encodeURIComponent(apiKey)}`,
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
           {},
           10000
         );
@@ -960,7 +960,23 @@
         if (!res.ok) {
           throw new Error(data?.error?.message || `HTTP ${res.status}`);
         }
-        return data.displayName || MODEL_NAME;
+
+        const models = (data.models || [])
+          .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+          .map(m => m.name.replace(/^models\//, ''))
+          .filter(n => !n.includes('image') && !n.includes('tts') && !n.includes('embedding'));
+
+        // Prefer lightweight/fast flash variants first, then any flash, then first available model
+        const picked = models.find(n => n.includes('flash-lite'))
+          || models.find(n => n.includes('flash'))
+          || models[0];
+
+        if (!picked) {
+          throw new Error('Kein passendes Text-Modell für deinen API-Key gefunden.');
+        }
+
+        localStorage.setItem(MODEL_CACHE_KEY, picked);
+        return picked;
       }
 
       function extractJsonObject(rawText) {
@@ -973,7 +989,6 @@
         return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
       }
 
-      // Fast single-shot call with thinkingBudget: 0 so Gemini 3.8 Flash responds in ~3-5s instead of timing out at 55s
       async function callGeminiSingleShot(promptText, timeoutMs = 30000) {
         const apiKey = getApiKey();
         if (!apiKey) {
@@ -981,7 +996,9 @@
           throw new Error('Bitte zuerst deinen Google Gemini API-Key hinterlegen.');
         }
 
-        const makePayload = (withThinkingConfig) => {
+        let activeModel = await resolveAvailableModel(apiKey);
+
+        const sendRequest = (modelId, withThinkingConfig) => {
           const genCfg = {
             temperature: 0.85,
             maxOutputTokens: 2200
@@ -989,33 +1006,30 @@
           if (withThinkingConfig) {
             genCfg.thinkingConfig = { thinkingBudget: 0 };
           }
-          return JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-            generationConfig: genCfg
-          });
-        };
-
-        let response = await fetchWithTimeout(
-          `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${encodeURIComponent(apiKey)}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: makePayload(true)
-          },
-          timeoutMs
-        );
-
-        // If API rejects thinkingConfig parameter with 400, retry once without thinkingConfig
-        if (response.status === 400) {
-          response = await fetchWithTimeout(
-            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          return fetchWithTimeout(
+            `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: makePayload(false)
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: genCfg
+              })
             },
             timeoutMs
           );
+        };
+
+        let response = await sendRequest(activeModel, true);
+
+        if (response.status === 400) {
+          response = await sendRequest(activeModel, false);
+        }
+
+        if (response.status === 404) {
+          localStorage.removeItem(MODEL_CACHE_KEY);
+          activeModel = await resolveAvailableModel(apiKey);
+          response = await sendRequest(activeModel, false);
         }
 
         const data = await response.json();
@@ -1028,7 +1042,7 @@
         }
 
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        return extractJsonObject(rawText);
+        return { parsed: extractJsonObject(rawText), model: activeModel };
       }
 
       function buildPlanFromUserLibrary(activeSlots, excludeTitles = []) {
@@ -1434,7 +1448,6 @@
         document.getElementById('btn-generate-plan').classList.toggle('hidden', state.currentStep !== 5);
       }
 
-      // ==================== FAST 2-HALF ONLINE GENERATION (NO THINKING DELAY) ====================
       async function generateMealPlanOnline() {
         const p = state.prefs;
         const activeSlots = [];
@@ -1458,6 +1471,7 @@
           const mid = Math.ceil(activeSlots.length / 2);
           const halves = [activeSlots.slice(0, mid), activeSlots.slice(mid)].filter(h => h.length > 0);
           const allMeals = [];
+          let usedModel = '';
 
           for (let hIdx = 0; hIdx < halves.length; hIdx++) {
             const batch = halves[hIdx];
@@ -1465,7 +1479,7 @@
             const alreadyUsed = allMeals.map(m => m.title).join(', ');
 
             loadingTitle.textContent = `Teil ${hIdx + 1} von ${halves.length} wird generiert...`;
-            loadingSub.textContent = `Plane ${batch[0].day} bis ${batch[batch.length - 1].day} (ca. 3–6 Sek.)...`;
+            loadingSub.textContent = `Plane ${batch[0].day} bis ${batch[batch.length - 1].day}...`;
 
             const prompt = `Antworte NUR als kompaktes JSON ohne Markdown. Plane exakt diese ${batch.length} Slots für ${p.adults} Erw., ${p.children} Ki., Budget ${Math.round(p.budget / halves.length)}€.
 Ernährung: ${p.diet} | Allergien MEIDEN: ${p.allergies.join(',') || 'keine'} | No-Gos MEIDEN: ${p.nogos.join(',') || 'keine'}
@@ -1481,7 +1495,8 @@ Regeln:
 Slots: ${JSON.stringify(batch)}
 Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLeftover":false,"emoji":"🍝","cuisine":"Italienisch","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":550,"estimatedCost":6.5,"ingredients":[{"name":"Zutat","amount":"250 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}]}`;
 
-            const parsed = await callGeminiSingleShot(prompt, 30000);
+            const { parsed, model } = await callGeminiSingleShot(prompt, 30000);
+            usedModel = model;
             if (!parsed || !Array.isArray(parsed.meals) || parsed.meals.length === 0) {
               throw new Error(`Teil ${hIdx + 1} lieferte kein gültiges Rezept-Array.`);
             }
@@ -1496,8 +1511,8 @@ Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLe
             }
           });
           saveState();
-          showDashboard('Live mit Gemini 3.8 Flash generiert');
-          showToast('✨ Online-Wochenplan erfolgreich erstellt!');
+          showDashboard(`Live mit ${usedModel} generiert`);
+          showToast(`✨ Online-Wochenplan mit ${usedModel} erstellt!`);
         } catch (err) {
           showToast(`Online-Fehler: ${err.message}`);
         } finally {
@@ -1546,7 +1561,7 @@ Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLe
           const prompt = `Antworte NUR mit JSON ohne Markdown. 1 neues Rezept für ${meal.day} (${meal.slot}), ${p.diet}, Allergien meiden: ${p.allergies.join(',') || 'keine'}, No-Gos meiden: ${p.nogos.join(',') || 'keine'}, Lernregeln: ${state.feedbackHistory.join('; ') || 'keine'}, Wunsch: ${customWish || 'Abwechslung'}. Nicht wiederholen: ${existingTitles.join(', ')}. Blacklist: ${state.blacklist.join(', ') || 'keine'}.
 Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":550,"estimatedCost":6.2,"ingredients":[{"name":"Zutat","amount":"200 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}`;
 
-          const newMeal = await callGeminiSingleShot(prompt, 25000);
+          const { parsed: newMeal } = await callGeminiSingleShot(prompt, 25000);
           Object.assign(meal, { ...newMeal, isLeftover: false });
           state.mealImages[meal.title] = generateFoodPhotoCanvas(meal);
           saveState();
@@ -2033,6 +2048,7 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
 
         document.getElementById('btn-repair-app').addEventListener('click', () => {
           localStorage.removeItem(PLAN_SESSION_KEY);
+          localStorage.removeItem(MODEL_CACHE_KEY);
           window.location.href = window.location.pathname;
         });
 
@@ -2063,13 +2079,14 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
           testBtn.disabled = true;
           testBtn.textContent = '⏳ Prüfe...';
           statusEl.className = 'text-xs font-medium p-3 rounded-xl bg-stone-100 text-stone-700';
-          statusEl.textContent = 'Prüfe Key ohne Token-Verbrauch...';
+          statusEl.textContent = 'Prüfe Key & Modell ohne Token-Verbrauch...';
           statusEl.classList.remove('hidden');
 
           try {
+            const resolved = await resolveAvailableModel(val);
             const modelTitle = await verifyApiKeyZeroTokens(val);
             statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200';
-            statusEl.textContent = `✓ Key gültig (${modelTitle}) – 0 Tokens verbraucht!`;
+            statusEl.textContent = `✓ Key gültig (${resolved} · ${modelTitle}) – 0 Tokens verbraucht!`;
           } catch (e) {
             statusEl.className = 'text-xs font-medium p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
             statusEl.textContent = `Fehler: ${e.message}`;
