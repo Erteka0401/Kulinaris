@@ -637,15 +637,13 @@
 
   <script>
     (function () {
-      const APP_VERSION = '2026-11-22-v8';
+      const APP_VERSION = '2026-11-22-v9';
       const VERSION_STORAGE = 'kulinaris_app_version';
-      const STORAGE_KEY = 'kulinaris_pwa_v8';
+      const STORAGE_KEY = 'kulinaris_pwa_v9';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
       const ACTIVE_MODEL_STORAGE = 'kulinaris_gemini_model';
-      const DEFAULT_MODEL = 'gemini-3.8-flash';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
-      // Self-healing version migration: clears stale/corrupted state while keeping user's API key
       (function enforceVersionCleanState() {
         try {
           const savedVer = localStorage.getItem(VERSION_STORAGE);
@@ -777,72 +775,96 @@
         }
       }
 
-      async function resolveWorkingModel(apiKey) {
-        const cached = localStorage.getItem(ACTIVE_MODEL_STORAGE);
-        if (cached) return cached;
-
+      async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
-          if (res.ok) {
-            const data = await res.json();
-            const models = (data.models || [])
-              .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
-              .map(m => m.name.replace(/^models\//, ''));
-            const preferred = models.find(n => n.includes('3.8-flash'))
-              || models.find(n => n.includes('flash') && !n.includes('2.5'))
-              || models.find(n => n.includes('flash'))
-              || models[0];
-            if (preferred) {
-              localStorage.setItem(ACTIVE_MODEL_STORAGE, preferred);
-              return preferred;
-            }
+          return await fetch(url, { ...options, signal: controller.signal });
+        } catch (err) {
+          if (err.name === 'AbortError') {
+            throw new Error(`Zeitüberschreitung nach ${Math.round(timeoutMs / 1000)} Sek. (keine Antwort vom Server)`);
           }
-        } catch (_) {}
-        return DEFAULT_MODEL;
+          throw err;
+        } finally {
+          clearTimeout(timer);
+        }
       }
 
-      async function callGeminiJSON(promptText) {
+      async function discoverAvailableModels(apiKey) {
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
+          {},
+          10000
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.error?.message || `API-Key ungültig (HTTP ${res.status})`);
+        }
+        const available = (data.models || [])
+          .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+          .map(m => m.name.replace(/^models\//, ''));
+
+        if (available.length === 0) {
+          throw new Error('Für diesen API-Key sind keine Text-Generierungsmodelle freigeschaltet.');
+        }
+
+        // Prioritize newest flash models first, excluding deprecated/experimental audio-only variants
+        const candidates = available.filter(n => !n.includes('tts') && !n.includes('image') && !n.includes('embedding'));
+        const pool = candidates.length > 0 ? candidates : available;
+
+        const best = pool.find(n => n === 'gemini-3.8-flash')
+          || pool.find(n => n.includes('3.8-flash'))
+          || pool.find(n => n.includes('flash-latest'))
+          || pool.find(n => n.includes('flash'))
+          || pool[0];
+
+        localStorage.setItem(ACTIVE_MODEL_STORAGE, best);
+        return best;
+      }
+
+      async function callGeminiJSON(promptText, timeoutMs = 25000) {
         const apiKey = getApiKey();
         if (!apiKey) {
           openApiKeyModal();
           throw new Error('Bitte zuerst deinen Google Gemini API-Key hinterlegen.');
         }
 
-        let model = await resolveWorkingModel(apiKey);
-        const makeRequest = async (modelName) => {
-          return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+        let model = localStorage.getItem(ACTIVE_MODEL_STORAGE);
+        if (!model) {
+          model = await discoverAvailableModels(apiKey);
+        }
+
+        const send = (modelName) => fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: [{ parts: [{ text: promptText }] }],
               generationConfig: {
-                temperature: 0.9,
+                temperature: 0.85,
                 responseMimeType: 'application/json'
               }
             })
-          });
-        };
+          },
+          timeoutMs
+        );
 
-        let response = await makeRequest(model);
-
+        let response = await send(model);
         if (!response.ok && (response.status === 404 || response.status === 400)) {
           localStorage.removeItem(ACTIVE_MODEL_STORAGE);
-          const freshModel = await resolveWorkingModel(apiKey);
-          if (freshModel !== model) {
-            model = freshModel;
-            response = await makeRequest(model);
-          }
+          model = await discoverAvailableModels(apiKey);
+          response = await send(model);
         }
 
         const data = await response.json();
         if (!response.ok) {
-          const msg = data?.error?.message || `HTTP ${response.status}`;
-          throw new Error(msg);
+          throw new Error(data?.error?.message || `HTTP ${response.status}`);
         }
 
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
         const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-        return JSON.parse(cleaned);
+        return { parsed: JSON.parse(cleaned), model };
       }
 
       function openApiKeyModal() {
@@ -872,7 +894,7 @@
         el.textContent = msg;
         el.classList.remove('hidden');
         clearTimeout(el._timer);
-        el._timer = setTimeout(() => el.classList.add('hidden'), 3500);
+        el._timer = setTimeout(() => el.classList.add('hidden'), 4000);
       }
 
       function formatEuro(num) {
@@ -1167,34 +1189,33 @@
         overlay.classList.remove('hidden');
 
         try {
-          const prompt = `Du bist Kulinaris, ein deutscher Ernährungs- und Kochplaner. Erstelle einen maximal abwechslungsreichen, kreativen Wochen-Essensplan als reines JSON-Objekt.
+          const prompt = `Du bist Kulinaris, ein deutscher Ernährungs- und Kochplaner. Erstelle einen abwechslungsreichen Wochen-Essensplan als reines JSON-Objekt.
 
 NUTZERPROFIL:
 - Wochenbudget gesamt: ${p.budget} Euro
 - Haushalt: ${p.adults} Erwachsene, ${p.children} Kinder
-- Einkäufe pro Woche: ${p.shoppingTrips}x in: ${p.supermarkets.join(', ') || 'beliebiger Supermarkt'}
+- Supermärkte: ${p.supermarkets.join(', ') || 'beliebig'}
 - Ernährungsform: ${p.diet}
 - Allergien (STRIKT MEIDEN): ${p.allergies.join(', ') || 'keine'}
 - Gesundheitshinweise: ${p.healthNotes || 'keine'}
 - No-Go-Zutaten (STRIKT MEIDEN): ${p.nogos.join(', ') || 'keine'}
 - Lieblingsküchen: ${p.cuisines.join(', ') || 'alle'}
-- Maximale Kochzeit unter der Woche: ${p.maxCookTime} Minuten
+- Max. Kochzeit: ${p.maxCookTime} Minuten
 - Kocherfahrung: ${p.skill}
 - Küchengeräte: ${p.equipment.join(', ')}
 - Restestrategie: ${p.leftoverMode}
-- Ernährungs- & Geschmacksziele: ${p.goals.join(', ')} ${p.customGoal ? '| ' + p.customGoal : ''}
-- Favoriten (gerne berücksichtigen): ${state.favorites.map(f => f.title).join(', ') || 'keine'}
-- Blacklist (NIEMALS vorschlagen): ${state.blacklist.join(', ') || 'keine'}
-- Bisheriges Nutzer-Feedback: ${state.feedbackHistory.join(' | ') || 'keines'}
+- Ziele: ${p.goals.join(', ')} ${p.customGoal ? '| ' + p.customGoal : ''}
+- Favoriten: ${state.favorites.map(f => f.title).join(', ') || 'keine'}
+- Blacklist (NIEMALS): ${state.blacklist.join(', ') || 'keine'}
+- Nutzer-Feedback: ${state.feedbackHistory.join(' | ') || 'keines'}
 
 EXAKT ZU FÜLLENDE SLOTS (${activeSlots.length} Einträge):
 ${JSON.stringify(activeSlots)}
 
 REGELN:
 1. Liefere exakt für jeden Eintrag aus den Slots ein Element in "meals" mit derselben "id", "day", "slot".
-2. Wenn mode === "leftover": Setze "isLeftover": true, "estimatedCost": 0, "ingredients": [] und plane sinnvoll die Reste einer vorherigen größeren Portion ein.
-3. Wenn mode === "cook": Setze "isLeftover": false. Sorge für maximale kulinarische Vielfalt (keine doppelten Hauptzutaten/Beilagen an aufeinanderfolgenden Tagen!) und halte das Gesamtbudget von ${p.budget} Euro realistisch ein.
-4. Passe alle Zutatenmengen an ${p.adults} Erwachsene und ${p.children} Kinder an.
+2. Wenn mode === "leftover": Setze "isLeftover": true, "estimatedCost": 0, "ingredients": [] und plane sinnvoll die Reste einer vorherigen Portion ein.
+3. Wenn mode === "cook": Setze "isLeftover": false. Sorge für maximale Vielfalt ohne doppelte Hauptzutaten an aufeinanderfolgenden Tagen und halte das Budget von ${p.budget} Euro ein.
 
 ANTWORT-SCHEMA (striktes JSON):
 {
@@ -1207,24 +1228,22 @@ ANTWORT-SCHEMA (striktes JSON):
       "emoji": "🍝",
       "cuisine": "Italienisch",
       "title": "Gerichtstitel",
-      "desc": "Appetitliche Kurzbeschreibung in 1-2 Sätzen",
+      "desc": "Kurzbeschreibung",
       "prepTime": 25,
       "kcal": 580,
       "estimatedCost": 6.50,
-      "ingredients": [
-        { "name": "Zutat", "amount": "250 g", "dept": "Obst & Gemüse" }
-      ],
-      "steps": ["Schritt 1", "Schritt 2", "Schritt 3"]
+      "ingredients": [{ "name": "Zutat", "amount": "250 g", "dept": "Obst & Gemüse" }],
+      "steps": ["Schritt 1", "Schritt 2"]
     }
   ]
 }`;
 
-          const result = await callGeminiJSON(prompt);
-          if (!result || !Array.isArray(result.meals)) {
+          const { parsed } = await callGeminiJSON(prompt, 30000);
+          if (!parsed || !Array.isArray(parsed.meals)) {
             throw new Error('Unerwartetes Antwortformat von der KI.');
           }
 
-          state.plan = result.meals;
+          state.plan = parsed.meals;
           state.checkedShopping = {};
           state.plan.forEach(m => {
             if (!m.isLeftover && !state.mealImages[m.title]) {
@@ -1272,7 +1291,7 @@ JSON-Format:
   "ingredients": [{ "name": "Zutat", "amount": "200 g", "dept": "Obst & Gemüse" }],
   "steps": ["Schritt 1", "Schritt 2"]
 }`;
-          const newMeal = await callGeminiJSON(prompt);
+          const { parsed: newMeal } = await callGeminiJSON(prompt, 20000);
           Object.assign(meal, {
             ...newMeal,
             isLeftover: false
@@ -1652,26 +1671,33 @@ JSON-Format:
         document.getElementById('btn-test-apikey').addEventListener('click', async () => {
           const val = document.getElementById('input-api-key').value.trim();
           const statusEl = document.getElementById('apikey-test-status');
+          const testBtn = document.getElementById('btn-test-apikey');
+
           if (!val) {
             statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-red-50 text-red-700';
             statusEl.textContent = 'Bitte gib zuerst einen API-Key ein.';
             statusEl.classList.remove('hidden');
             return;
           }
+
           setApiKey(val);
           localStorage.removeItem(ACTIVE_MODEL_STORAGE);
+          testBtn.disabled = true;
+          testBtn.textContent = '⏳ Prüfe...';
           statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-stone-100 text-stone-700';
-          statusEl.textContent = 'Verbindung zu Gemini wird geprüft...';
+          statusEl.textContent = 'Suche freigeschaltetes Gemini-Modell (max. 15 Sek.)...';
           statusEl.classList.remove('hidden');
 
           try {
-            const usedModel = await resolveWorkingModel(val);
-            await callGeminiJSON('Antworte nur mit {"ok": true}');
+            const { model } = await callGeminiJSON('Antworte nur mit {"ok": true}', 15000);
             statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200';
-            statusEl.textContent = `✓ Verbunden! Aktives Modell: ${usedModel}`;
+            statusEl.textContent = `✓ Verbunden! Aktives Modell: ${model}`;
           } catch (e) {
             statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-red-50 text-red-700 border border-red-200';
-            statusEl.textContent = `Verbindung fehlgeschlagen: ${e.message}`;
+            statusEl.textContent = `Fehler: ${e.message}`;
+          } finally {
+            testBtn.disabled = false;
+            testBtn.textContent = '🔌 Verbindung testen';
           }
         });
 
