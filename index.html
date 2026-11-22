@@ -113,7 +113,7 @@
             <span class="font-display font-bold text-xl sm:text-2xl text-stone-900 tracking-tight">Kulinaris</span>
             <span class="hidden sm:inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-700">KI-Wochenplaner</span>
           </div>
-          <p class="hidden md:block text-xs text-stone-500">Persönliche Essensplanung, Resteverwertung & Einkaufsliste</p>
+          <p class="hidden md:block text-xs text-stone-500">Live-KI-Planung, eigene Rezept-Bibliothek & Einkaufsliste</p>
         </div>
       </div>
 
@@ -131,7 +131,7 @@
         <button type="button" id="btn-open-share" class="hidden text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl bg-sage-500 text-white hover:bg-sage-600 transition shadow-xs">
           🔗 Teilen
         </button>
-        <button type="button" id="btn-repair-app" title="App-Daten zurücksetzen (behält API-Key)" class="text-xs font-semibold px-2.5 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-600 hover:bg-red-50 hover:text-red-700 transition">
+        <button type="button" id="btn-repair-app" title="Aktive Woche zurücksetzen (behält API-Key, Bibliothek, Favoriten, Blacklist & KI-Lernprofil)" class="text-xs font-semibold px-2.5 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-600 hover:bg-red-50 hover:text-red-700 transition">
           🔄 Reset
         </button>
       </div>
@@ -141,8 +141,8 @@
   <!-- ==================== API KEY INFO BANNER ==================== -->
   <div id="apikey-banner" class="bg-amber-50 border-b border-amber-200 px-4 py-2.5">
     <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
-      <p class="text-amber-900 font-medium">🔑 Optional: Hinterlege deinen <strong>Google Gemini API-Key</strong> für Live-KI-Rezepte (funktioniert bei Limit-Pause auch lokal).</p>
-      <button type="button" id="btn-banner-apikey" class="px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold text-xs hover:bg-amber-700 transition">Key verwalten</button>
+      <p class="text-amber-900 font-medium">🔑 Hinterlege deinen <strong>Google Gemini API-Key</strong>, damit Kulinaris deine Rezepte live online generiert.</p>
+      <button type="button" id="btn-banner-apikey" class="px-3 py-1 rounded-lg bg-amber-600 text-white font-semibold text-xs hover:bg-amber-700 transition">Key eintragen</button>
     </div>
   </div>
 
@@ -406,7 +406,7 @@
           Weiter →
         </button>
         <button type="button" id="btn-generate-plan" class="hidden px-7 py-3.5 rounded-2xl bg-terracotta-500 text-white font-bold text-sm sm:text-base hover:bg-terracotta-600 shadow-md transition flex items-center gap-2">
-          <span>✨ Wochenplan erstellen</span>
+          <span>✨ Online KI-Plan erstellen</span>
         </button>
       </div>
     </section>
@@ -417,14 +417,14 @@
         <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
           <div>
             <h1 class="text-2xl sm:text-3xl font-bold text-stone-900">Dein Wochenplan</h1>
-            <p id="dashboard-subtitle" class="text-xs sm:text-sm text-stone-500 mt-0.5">Persönlich geplant</p>
+            <p id="dashboard-subtitle" class="text-xs sm:text-sm text-stone-500 mt-0.5">Live generiert mit Gemini KI</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button type="button" id="btn-generate-all-images" class="px-3.5 py-2 rounded-xl border border-sage-300 bg-sage-50 text-sage-700 text-xs sm:text-sm font-semibold hover:bg-sage-100 transition">
-              📸 Gerichtsfotos erzeugen
+            <button type="button" id="btn-generate-from-library" class="px-3.5 py-2 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs sm:text-sm font-semibold hover:bg-stone-50 transition">
+              📚 Aus meiner Bibliothek mischen
             </button>
             <button type="button" id="btn-regenerate-week" class="px-4 py-2 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 transition shadow-sm">
-              🔄 Neue Woche generieren
+              ✨ Neue KI-Woche (Online)
             </button>
           </div>
         </div>
@@ -451,6 +451,9 @@
         <button type="button" data-tab="shopping" class="dash-tab px-4 py-2 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition">
           🛒 Einkaufsliste (<span id="shopping-count-badge" class="tabular-nums">0</span>)
         </button>
+        <button type="button" data-tab="library" class="dash-tab px-4 py-2 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition">
+          📚 Rezept-Bibliothek (<span id="lib-count-badge" class="tabular-nums">0</span>)
+        </button>
         <button type="button" data-tab="favorites" class="dash-tab px-4 py-2 rounded-xl text-sm font-semibold bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 transition">
           ❤️ Favoriten & Blacklist (<span id="fav-count-badge" class="tabular-nums">0</span>)
         </button>
@@ -459,10 +462,12 @@
         </button>
       </div>
 
+      <!-- TAB: WOCHENPLAN -->
       <div id="tab-plan" class="dash-tab-content space-y-4">
         <div id="meal-plan-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
 
+      <!-- TAB: EINKAUFSLISTE -->
       <div id="tab-shopping" class="dash-tab-content hidden space-y-4">
         <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-7 space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
@@ -484,24 +489,134 @@
         </div>
       </div>
 
+      <!-- TAB: REZEPT-BIBLIOTHEK (VOLLER ZUGRIFF + SELBST ERWEITERBAR) -->
+      <div id="tab-library" class="dash-tab-content hidden space-y-6">
+        <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-7 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-xl font-bold text-stone-900">📚 Deine Rezept-Bibliothek</h2>
+              <p class="text-xs sm:text-sm text-stone-500">Hier siehst du alle gespeicherten Rezepte, kannst neue hinzufügen oder KI-Rezepte dauerhaft hier sichern.</p>
+            </div>
+            <button type="button" id="btn-toggle-add-recipe" class="px-4 py-2.5 rounded-xl bg-terracotta-500 text-white text-xs sm:text-sm font-bold hover:bg-terracotta-600 shadow-xs transition">
+              ➕ Neues Rezept hinzufügen
+            </button>
+          </div>
+
+          <!-- FORMULAR: EIGENES REZEPT HINZUFÜGEN -->
+          <form id="form-add-recipe" class="hidden p-5 rounded-2xl bg-sage-50/90 border border-sage-200 space-y-4">
+            <h3 class="text-base font-bold text-stone-900">Neues Rezept in deine Bibliothek eintragen</h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-stone-700 mb-1">Gerichtstitel *</label>
+                <input type="text" id="lib-new-title" required placeholder="z.B. Omas Linseneintopf mit Würstchen" class="w-full px-3.5 py-2 text-sm rounded-xl border border-stone-300 bg-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-700 mb-1">Küche / Kategorie</label>
+                <select id="lib-new-cuisine" class="w-full px-3 py-2 text-sm rounded-xl border border-stone-300 bg-white">
+                  <option value="Deutsch / Hausmannskost">Deutsch / Hausmannskost</option>
+                  <option value="Italienisch">Italienisch</option>
+                  <option value="Asiatisch">Asiatisch</option>
+                  <option value="Mediterran">Mediterran</option>
+                  <option value="Mexikanisch">Mexikanisch</option>
+                  <option value="Orientalisch">Orientalisch</option>
+                  <option value="Indisch">Indisch</option>
+                  <option value="Eigene Kreation">Eigene Kreation</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-stone-700 mb-1">Emoji</label>
+                <input type="text" id="lib-new-emoji" value="🍲" maxlength="4" class="w-full px-3 py-2 text-sm rounded-xl border border-stone-300 bg-white text-center" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-700 mb-1">Zubereitungszeit (Min.)</label>
+                <input type="number" id="lib-new-time" value="25" min="5" max="180" class="w-full px-3 py-2 text-sm rounded-xl border border-stone-300 bg-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-700 mb-1">Geschätzte Kosten (€)</label>
+                <input type="number" id="lib-new-cost" value="6.50" step="0.10" min="0" class="w-full px-3 py-2 text-sm rounded-xl border border-stone-300 bg-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-700 mb-1">Ernährungsform</label>
+                <select id="lib-new-diet" class="w-full px-3 py-2 text-sm rounded-xl border border-stone-300 bg-white">
+                  <option value="Allesesser (Mischkost)">Mischkost</option>
+                  <option value="Vegetarisch">Vegetarisch</option>
+                  <option value="Vegan">Vegan</option>
+                  <option value="Pescetarisch">Pescetarisch</option>
+                  <option value="Low Carb / Keto">Low Carb / Keto</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-stone-700 mb-1">Zutaten (eine pro Zeile: z.B. "250 g Nudeln") *</label>
+                <textarea id="lib-new-ingredients" rows="4" required placeholder="250 g Spaghetti&#10;400 ml Passierte Tomaten&#10;1 Bund Basilikum" class="w-full p-3 text-xs sm:text-sm rounded-xl border border-stone-300 bg-white"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-700 mb-1">Zubereitungsschritte (ein Schritt pro Zeile) *</label>
+                <textarea id="lib-new-steps" rows="4" required placeholder="Nudeln in Salzwasser kochen.&#10;Sauce erhitzen und abschmecken.&#10;Zusammen servieren." class="w-full p-3 text-xs sm:text-sm rounded-xl border border-stone-300 bg-white"></textarea>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2">
+              <button type="button" id="btn-cancel-add-recipe" class="px-4 py-2 rounded-xl border border-stone-300 bg-white text-xs font-semibold text-stone-700">Abbrechen</button>
+              <button type="submit" class="px-5 py-2 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-bold hover:bg-sage-600">💾 Rezept in Bibliothek speichern</button>
+            </div>
+          </form>
+
+          <!-- SUCH- & FILTERLEISTE FÜR BIBLIOTHEK -->
+          <div class="flex flex-wrap gap-2">
+            <input type="text" id="input-lib-search" placeholder="Bibliothek durchsuchen (Titel, Zutat, Küche)..." class="flex-1 min-w-[200px] px-4 py-2.5 text-sm rounded-xl border border-stone-300 focus:outline-none focus:border-sage-500" />
+            <select id="select-lib-filter" class="px-3.5 py-2.5 text-sm rounded-xl border border-stone-300 bg-white">
+              <option value="all">Alle Rezepte</option>
+              <option value="custom">Nur meine eigenen Rezepte</option>
+              <option value="Vegan">Vegan</option>
+              <option value="Vegetarisch">Vegetarisch</option>
+            </select>
+          </div>
+
+          <!-- REZEPT-KARTEN -->
+          <div id="library-grid-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+      </div>
+
+      <!-- TAB: FAVORITEN & BLACKLIST -->
       <div id="tab-favorites" class="dash-tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-6 space-y-4">
-          <h2 class="text-xl font-bold text-stone-900">❤️ Gespeicherte Favoriten</h2>
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-stone-900">❤️ Gespeicherte Favoriten</h2>
+            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Dauerhaft gespeichert</span>
+          </div>
           <p class="text-xs text-stone-500">Diese Gerichte bevorzugt die KI bei künftigen Plänen.</p>
           <div id="favorites-list-container" class="space-y-3"></div>
         </div>
 
         <div class="bg-white rounded-3xl border border-stone-200/90 p-5 sm:p-6 space-y-4">
-          <h2 class="text-xl font-bold text-stone-900">🚫 Abgelehnte Gerichte (Blacklist)</h2>
-          <p class="text-xs text-stone-500">Werden bei zukünftigen Wochenplänen strikt ausgeschlossen.</p>
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-stone-900">🚫 Abgelehnte Gerichte (Blacklist)</h2>
+            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Dauerhaft gespeichert</span>
+          </div>
+          <p class="text-xs text-stone-500">Werden bei allen Wochenplänen strikt ausgeschlossen.</p>
+          <div class="flex gap-2">
+            <input type="text" id="input-manual-ban" placeholder="Gericht manuell auf Blacklist setzen..." class="flex-1 px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-stone-300 focus:outline-none focus:border-sage-500" />
+            <button type="button" id="btn-add-manual-ban" class="px-3.5 py-2 rounded-xl bg-stone-800 text-white text-xs font-semibold hover:bg-stone-700 shrink-0">Sperren</button>
+          </div>
           <div id="blacklist-container" class="space-y-3"></div>
         </div>
       </div>
 
-      <div id="tab-feedback" class="dash-tab-content hidden max-w-2xl space-y-5">
+      <!-- TAB: KI-LERNPROFIL & BACKUP -->
+      <div id="tab-feedback" class="dash-tab-content hidden grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white rounded-3xl border border-stone-200/90 p-6 space-y-4">
-          <h2 class="text-xl font-bold text-stone-900">🧠 Rückmeldung zur Woche geben</h2>
-          <p class="text-sm text-stone-600">Dein Feedback wird direkt berücksichtigt und verbessert alle zukünftigen Pläne.</p>
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-stone-900">🧠 KI-Lernprofil & Regeln</h2>
+            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Update-sicher</span>
+          </div>
+          <p class="text-sm text-stone-600">Alle Regeln hier fließen dauerhaft in die KI-Prompts ein.</p>
 
           <div class="flex flex-wrap gap-2" id="quick-feedback-tags">
             <button type="button" data-fb="Portionen waren etwas zu klein" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 hover:bg-sage-50">Portionen zu klein</button>
@@ -511,15 +626,37 @@
             <button type="button" data-fb="Kräftiger würzen und mehr Abwechslung" class="fb-tag text-xs px-3 py-1.5 rounded-full border border-stone-300 hover:bg-sage-50">Kräftiger würzen</button>
           </div>
 
-          <textarea id="input-feedback-text" rows="3" placeholder="Deine persönliche Rückmeldung..." class="w-full p-3.5 text-sm rounded-2xl border border-stone-300 focus:outline-none focus:border-sage-500"></textarea>
+          <textarea id="input-feedback-text" rows="3" placeholder="Deine persönliche Lernregel (z.B. immer mindestens 1 Pasta-Gericht, keine Suppen abends)..." class="w-full p-3.5 text-sm rounded-2xl border border-stone-300 focus:outline-none focus:border-sage-500"></textarea>
 
           <button type="button" id="btn-save-feedback" class="px-5 py-2.5 rounded-xl bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600">
-            Feedback speichern
+            Lernregel speichern
           </button>
 
           <div class="pt-4 border-t border-stone-200 space-y-2">
-            <h3 class="text-sm font-bold text-stone-800">Gespeicherte Lernregeln:</h3>
+            <h3 class="text-sm font-bold text-stone-800">Aktive Lernregeln:</h3>
             <div id="feedback-history-list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-3xl border border-stone-200/90 p-6 space-y-4">
+          <h2 class="text-xl font-bold text-stone-900">💾 Komplett-Sicherung (Backup)</h2>
+          <p class="text-sm text-stone-600">Sichere deine <strong>Rezept-Bibliothek, Favoriten, Blacklist, Lernregeln und Einstellungen</strong> als Text-Code oder JSON-Datei.</p>
+
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="btn-export-profile-copy" class="px-4 py-2.5 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600">
+              📋 Backup-Code kopieren
+            </button>
+            <button type="button" id="btn-export-profile-file" class="px-4 py-2.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs sm:text-sm font-semibold hover:bg-stone-100">
+              ⬇️ Als Datei speichern (.json)
+            </button>
+          </div>
+
+          <div class="pt-3 border-t border-stone-200 space-y-2">
+            <label for="input-import-profile" class="block text-xs font-bold text-stone-700">Backup-Code wiederherstellen:</label>
+            <textarea id="input-import-profile" rows="3" placeholder="Kopierten Backup-Code hier einfügen..." class="w-full p-3 text-xs rounded-2xl border border-stone-300 focus:outline-none focus:border-sage-500"></textarea>
+            <button type="button" id="btn-import-profile" class="px-4 py-2 rounded-xl bg-stone-800 text-white text-xs font-semibold hover:bg-stone-700">
+              📥 Profil & Bibliothek wiederherstellen
+            </button>
           </div>
         </div>
       </div>
@@ -584,7 +721,7 @@
         </div>
 
         <div class="p-4 rounded-2xl bg-sage-50 border border-sage-200 space-y-2">
-          <label for="input-swap-wish" class="block text-xs font-bold text-sage-800">Dieses Gericht gezielt austauschen (optional mit Wunsch):</label>
+          <label for="input-swap-wish" class="block text-xs font-bold text-sage-800">Dieses Gericht per Online-KI gezielt austauschen (optional mit Wunsch):</label>
           <div class="flex gap-2">
             <input type="text" id="input-swap-wish" placeholder="z.B. lieber etwas mit Nudeln, schneller, ohne Käse..." class="flex-1 px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-sage-300 bg-white focus:outline-none" />
             <button type="button" id="btn-modal-swap" class="px-4 py-2 rounded-xl bg-sage-500 text-white text-xs sm:text-sm font-semibold hover:bg-sage-600 shrink-0">🎲 Neu generieren</button>
@@ -594,6 +731,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200">
           <div class="flex flex-wrap gap-2">
             <button type="button" id="btn-modal-fav" class="px-3.5 py-2 rounded-xl border border-stone-300 text-xs sm:text-sm font-semibold hover:bg-rose-50">❤️ Favorisieren</button>
+            <button type="button" id="btn-modal-save-lib" class="px-3.5 py-2 rounded-xl border border-sage-300 bg-sage-50 text-sage-800 text-xs sm:text-sm font-semibold hover:bg-sage-100">📚 In Bibliothek speichern</button>
             <button type="button" id="btn-modal-ban" class="px-3.5 py-2 rounded-xl border border-stone-300 text-xs sm:text-sm font-semibold hover:bg-red-50">👎 Nie wieder</button>
             <button type="button" id="btn-modal-leftover" class="px-3.5 py-2 rounded-xl border border-stone-300 text-xs sm:text-sm font-semibold hover:bg-amber-50">🥡 Reste auf nächsten Slot</button>
           </div>
@@ -628,8 +766,8 @@
   <!-- ==================== LOADING OVERLAY ==================== -->
   <div id="loading-overlay" class="hidden fixed inset-0 z-50 bg-cream/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
     <div class="w-14 h-14 border-4 border-sage-200 border-t-sage-600 rounded-full animate-spin mb-4"></div>
-    <h3 id="loading-title" class="text-xl font-bold text-stone-900">Wochenplan wird erstellt...</h3>
-    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Sparsamer Einzel-Request (max. 1 Anfrage an Gemini)...</p>
+    <h3 id="loading-title" class="text-xl font-bold text-stone-900">Gemini KI erstellt deinen Wochenplan...</h3>
+    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">1 sparsamer Online-Request wird ausgeführt...</p>
   </div>
 
   <!-- ==================== TOAST ==================== -->
@@ -637,24 +775,37 @@
 
   <script>
     (function () {
-      const APP_VERSION = '2026-11-22-v12';
+      const APP_VERSION = '2026-11-22-v14';
       const VERSION_STORAGE = 'kulinaris_app_version';
-      const STORAGE_KEY = 'kulinaris_pwa_v12';
+      const PROFILE_MEMORY_KEY = 'kulinaris_persistent_memory_v1';
+      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v14';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
       const MODEL_NAME = 'gemini-3.8-flash';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
-      (function enforceVersionCleanState() {
+      (function migrateAndCleanSession() {
         try {
           const savedVer = localStorage.getItem(VERSION_STORAGE);
           if (savedVer !== APP_VERSION) {
-            const preservedKey = localStorage.getItem(API_KEY_STORAGE);
+            let mem = {};
+            try { mem = JSON.parse(localStorage.getItem(PROFILE_MEMORY_KEY) || '{}'); } catch (_) {}
+
             Object.keys(localStorage).forEach(k => {
-              if (k.startsWith('kulinaris_') && k !== API_KEY_STORAGE) {
+              if (k.startsWith('kulinaris_pwa_v') || k.startsWith('kulinaris_active_plan_v')) {
+                try {
+                  const old = JSON.parse(localStorage.getItem(k) || '{}');
+                  if (!mem.favorites && Array.isArray(old.favorites)) mem.favorites = old.favorites;
+                  if (!mem.blacklist && Array.isArray(old.blacklist)) mem.blacklist = old.blacklist;
+                  if (!mem.feedbackHistory && Array.isArray(old.feedbackHistory)) mem.feedbackHistory = old.feedbackHistory;
+                  if (!mem.prefs && old.prefs) mem.prefs = old.prefs;
+                } catch (_) {}
                 localStorage.removeItem(k);
               }
             });
-            if (preservedKey) localStorage.setItem(API_KEY_STORAGE, preservedKey);
+
+            if (Object.keys(mem).length > 0) {
+              localStorage.setItem(PROFILE_MEMORY_KEY, JSON.stringify(mem));
+            }
             localStorage.setItem(VERSION_STORAGE, APP_VERSION);
           }
         } catch (_) {}
@@ -679,20 +830,16 @@
       ];
       const GOALS = ['Proteinreich', 'Kalorienarm', 'Kalorienreich (Masse)', 'Stark gewürzt & pikant', 'Mild & familienfreundlich', 'Ballaststoffreich', 'Wenig Zutaten (max. 7)', 'One-Pot / Wenig Abwasch'];
 
-      // Kuratierte Offline-Rezeptdatenbank für sofortiges Planen ohne Token-Verbrauch / bei Rate-Limit
-      const OFFLINE_RECIPES = [
-        { emoji: '🍝', cuisine: 'Italienisch', title: 'Cremige Tomaten-Basilikum-Pasta mit gerösteten Kichererbsen', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Gluten'], prepTime: 20, kcal: 540, baseCost: 4.80, ingredients: [{ name: 'Vollkorn-Spaghetti', amount: '250 g', dept: 'Trockensortiment' }, { name: 'Passierte Tomaten', amount: '400 ml', dept: 'Konserven' }, { name: 'Kichererbsen (Dose)', amount: '1 Dose', dept: 'Konserven' }, { name: 'Frisches Basilikum', amount: '1 Bund', dept: 'Obst & Gemüse' }], steps: ['Pasta nach Packungsanleitung al dente kochen.', 'Kichererbsen anbraten, passierte Tomaten zugeben und 8 Minuten einköcheln lassen.', 'Mit Basilikum und Olivenöl vermengen.'] },
-        { emoji: '🍛', cuisine: 'Indisch', title: 'Rotes Linsen-Dal mit Kokosmilch & Basmatireis', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: [], prepTime: 25, kcal: 590, baseCost: 5.20, ingredients: [{ name: 'Rote Linsen', amount: '200 g', dept: 'Trockensortiment' }, { name: 'Kokosmilch', amount: '250 ml', dept: 'Konserven' }, { name: 'Basmatireis', amount: '200 g', dept: 'Trockensortiment' }, { name: 'Kurkuma & Currypulver', amount: '2 TL', dept: 'Gewürze' }], steps: ['Basmatireis garen.', 'Rote Linsen mit Gewürzen, Brühe und Kokosmilch 15 Minuten sämig kochen.', 'Zusammen heiß servieren.'] },
-        { emoji: '🥗', cuisine: 'Mediterran', title: 'Bunte Ofengemüse-Bowl mit Feta & Kräuter-Quinoa', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Laktose'], prepTime: 30, kcal: 520, baseCost: 6.40, ingredients: [{ name: 'Quinoa', amount: '180 g', dept: 'Trockensortiment' }, { name: 'Zucchini & Paprika', amount: '400 g', dept: 'Obst & Gemüse' }, { name: 'Feta-Käse', amount: '150 g', dept: 'Kühlregal' }, { name: 'Kürbiskerne', amount: '30 g', dept: 'Backwaren & Nüsse' }], steps: ['Gemüse würfeln und bei 200 °C 20 Minuten im Ofen rösten.', 'Quinoa in Gemüsebrühe garen.', 'Alles in Bowls anrichten und Feta darüber bröseln.'] },
-        { emoji: '🌮', cuisine: 'Mexikanisch', title: 'Schnelle Schwarze-Bohnen-Tacos mit Avocado & Limette', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Gluten'], prepTime: 20, kcal: 560, baseCost: 5.90, ingredients: [{ name: 'Weizen- oder Maistortillas', amount: '6 Stück', dept: 'Backwaren' }, { name: 'Schwarze Bohnen (Dose)', amount: '1 Dose', dept: 'Konserven' }, { name: 'Avocado', amount: '1 Stück', dept: 'Obst & Gemüse' }, { name: 'Mais & Limette', amount: '150 g', dept: 'Obst & Gemüse' }], steps: ['Bohnen und Mais mit Kreuzkümmel kurz in der Pfanne erhitzen.', 'Tortillas erwärmen und mit Bohnenmix und Avocadoscheiben füllen.', 'Mit frischem Limettensaft beträufeln.'] },
-        { emoji: '🥘', cuisine: 'Deutsch / Hausmannskost', title: 'Herzhafte Kartoffel-Gemüse-Pfanne mit Kräuterquark', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Laktose'], prepTime: 30, kcal: 510, baseCost: 4.50, ingredients: [{ name: 'Festkochende Kartoffeln', amount: '600 g', dept: 'Obst & Gemüse' }, { name: 'Karotten & Lauch', amount: '300 g', dept: 'Obst & Gemüse' }, { name: 'Speisequark (Magerstufe)', amount: '250 g', dept: 'Kühlregal' }, { name: 'Schnittlauch & Petersilie', amount: '1 Bund', dept: 'Obst & Gemüse' }], steps: ['Kartoffeln in dünne Scheiben schneiden und goldbraun braten.', 'Gemüse zugeben und bissfest mitgaren.', 'Quark mit Kräutern glattrühren und dazu servieren.'] },
-        { emoji: '🍜', cuisine: 'Asiatisch', title: 'Gebratene Reisnudeln mit knackigem Pak Choi, Tofu & Sesam', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Soja'], prepTime: 20, kcal: 550, baseCost: 6.10, ingredients: [{ name: 'Reisnudeln', amount: '200 g', dept: 'Asia / Trockensortiment' }, { name: 'Räuchertofu', amount: '200 g', dept: 'Kühlregal' }, { name: 'Pak Choi & Karotten', amount: '300 g', dept: 'Obst & Gemüse' }, { name: 'Sojasauce & Sesam', amount: '3 EL', dept: 'Asia / Würzmittel' }], steps: ['Reisnudeln mit heißem Wasser übergießen und 5 Minuten ziehen lassen.', 'Tofuwürfel und Gemüse im Wok scharf anbraten.', 'Nudeln und Sojasauce unterheben und mit Sesam bestreuen.'] },
-        { emoji: '🐟', cuisine: 'Skandinavisch', title: 'Ofenlachs mit Dill-Senf-Kruste & Zitronen-Brokkoli', tags: ['Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch', 'Low Carb / Keto'], allergens: ['Fisch / Meeresfrüchte', 'Senf'], prepTime: 25, kcal: 580, baseCost: 9.80, ingredients: [{ name: 'Lachsfilet', amount: '300 g', dept: 'Fisch / Kühlregal' }, { name: 'Brokkoli', amount: '400 g', dept: 'Obst & Gemüse' }, { name: 'Bio-Zitrone & Dill', amount: '1 Stück', dept: 'Obst & Gemüse' }, { name: 'Mittelscharfer Senf', amount: '2 TL', dept: 'Würzmittel' }], steps: ['Lachs mit Senf und Dill bestreichen.', 'Zusammen mit Brokkoliröschen bei 190 °C 18 Minuten im Ofen garen.', 'Mit frischem Zitronensaft abrunden.'] },
-        { emoji: '🍗', cuisine: 'Mediterran', title: 'Zitronen-Hähnchenbrust aus der Pfanne mit Rosmarinkartoffeln', tags: ['Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)'], allergens: [], prepTime: 30, kcal: 610, baseCost: 7.90, ingredients: [{ name: 'Hähnchenbrustfilet', amount: '320 g', dept: 'Fleisch / Kühlregal' }, { name: 'Drillinge (kleine Kartoffeln)', amount: '500 g', dept: 'Obst & Gemüse' }, { name: 'Frischer Rosmarin', amount: '2 Zweige', dept: 'Obst & Gemüse' }, { name: 'Kirschtomaten', amount: '200 g', dept: 'Obst & Gemüse' }], steps: ['Kartoffeln halbieren und mit Rosmarin in Olivenöl anbraten.', 'Hähnchenbrust würzen und von beiden Seiten saftig braten.', 'Kirschtomaten in den letzten 3 Minuten mit in die Pfanne geben.'] },
-        { emoji: '🥣', cuisine: 'Orientalisch', title: 'Würziger Kichererbsen-Spinat-Eintopf mit Kreuzkümmel & Fladenbrot', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Gluten'], prepTime: 20, kcal: 530, baseCost: 4.90, ingredients: [{ name: 'Kichererbsen (Dose)', amount: '1 Dose', dept: 'Konserven' }, { name: 'Gehackte Tomaten', amount: '400 g', dept: 'Konserven' }, { name: 'Babyspinat', amount: '150 g', dept: 'Obst & Gemüse' }, { name: 'Fladenbrot', amount: '1/2 Stück', dept: 'Backwaren' }], steps: ['Tomaten und Kichererbsen mit Kreuzkümmel und Paprikapulver 10 Minuten köcheln.', 'Spinat unterheben, bis er zusammenfällt.', 'Mit warmem Fladenbrot servieren.'] },
-        { emoji: '🥞', cuisine: 'Deutsch / Hausmannskost', title: 'Herzhafte Zucchini-Hafer-Puffer mit Apfel-Joghurt-Dip', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Ei', 'Laktose'], prepTime: 25, kcal: 490, baseCost: 4.40, ingredients: [{ name: 'Zucchini', amount: '400 g', dept: 'Obst & Gemüse' }, { name: 'Zarte Haferflocken', amount: '120 g', dept: 'Trockensortiment' }, { name: 'Bio-Eier', amount: '2 Stück', dept: 'Kühlregal' }, { name: 'Naturjoghurt', amount: '200 g', dept: 'Kühlregal' }], steps: ['Zucchini raspeln, ausdrücken und mit Haferflocken und Eiern verrühren.', 'In der Pfanne goldbraune Puffer ausbacken.', 'Mit Joghurt-Dip servieren.'] },
-        { emoji: '🥗', cuisine: 'Low Carb / Keto', title: 'Zucchini-Nudeln (Zoodles) mit Walnuss-Pesto & Mozzarella', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch', 'Low Carb / Keto'], allergens: ['Laktose', 'Nüsse / Erdnüsse'], prepTime: 15, kcal: 470, baseCost: 6.30, ingredients: [{ name: 'Zucchini', amount: '500 g', dept: 'Obst & Gemüse' }, { name: 'Basilikum-Pesto', amount: '3 EL', dept: 'Konserven' }, { name: 'Mini-Mozzarella', amount: '150 g', dept: 'Kühlregal' }, { name: 'Walnusskerne', amount: '30 g', dept: 'Backwaren & Nüsse' }], steps: ['Zucchini mit Sparschäler oder Spiralschneider in Streifen schneiden.', '2 Minuten in der Pfanne schwenken, Pesto unterheben.', 'Mit Mozzarella und Walnüssen garnieren.'] },
-        { emoji: '🍲', cuisine: 'Asiatisch', title: 'Kokos-Gemüse-Curry mit Zuckerschoten & Jasminreis', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: [], prepTime: 25, kcal: 570, baseCost: 6.20, ingredients: [{ name: 'Jasminreis', amount: '200 g', dept: 'Trockensortiment' }, { name: 'Zuckerschoten & Paprika', amount: '300 g', dept: 'Obst & Gemüse' }, { name: 'Kokosmilch', amount: '250 ml', dept: 'Konserven' }, { name: 'Rote Currypaste', amount: '1 EL', dept: 'Asia / Würzmittel' }], steps: ['Reis garen.', 'Currypaste kurz anrösten, Gemüse und Kokosmilch zugeben und 10 Minuten köcheln.', 'Mit Reis anrichten.'] }
+      // Initial seed library (user can view, delete, edit, or add unlimited custom recipes)
+      const DEFAULT_LIBRARY = [
+        { id: 'seed-1', isCustom: false, emoji: '🍝', cuisine: 'Italienisch', title: 'Cremige Tomaten-Basilikum-Pasta mit Kichererbsen', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Gluten'], prepTime: 20, kcal: 540, baseCost: 4.80, ingredients: [{ name: 'Vollkorn-Spaghetti', amount: '250 g', dept: 'Trockensortiment' }, { name: 'Passierte Tomaten', amount: '400 ml', dept: 'Konserven' }, { name: 'Kichererbsen (Dose)', amount: '1 Dose', dept: 'Konserven' }, { name: 'Basilikum', amount: '1 Bund', dept: 'Obst & Gemüse' }], steps: ['Pasta al dente kochen.', 'Kichererbsen anbraten, Tomaten zugeben und 8 Min. köcheln.', 'Mit Basilikum vermengen.'] },
+        { id: 'seed-2', isCustom: false, emoji: '🍛', cuisine: 'Indisch', title: 'Rotes Linsen-Dal mit Kokosmilch & Basmatireis', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: [], prepTime: 25, kcal: 590, baseCost: 5.20, ingredients: [{ name: 'Rote Linsen', amount: '200 g', dept: 'Trockensortiment' }, { name: 'Kokosmilch', amount: '250 ml', dept: 'Konserven' }, { name: 'Basmatireis', amount: '200 g', dept: 'Trockensortiment' }, { name: 'Currypulver & Kurkuma', amount: '2 TL', dept: 'Gewürze' }], steps: ['Basmatireis garen.', 'Rote Linsen mit Gewürzen, Brühe und Kokosmilch 15 Min. sämig kochen.'] },
+        { id: 'seed-3', isCustom: false, emoji: '🥗', cuisine: 'Mediterran', title: 'Bunte Ofengemüse-Bowl mit Feta & Quinoa', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Laktose'], prepTime: 30, kcal: 520, baseCost: 6.40, ingredients: [{ name: 'Quinoa', amount: '180 g', dept: 'Trockensortiment' }, { name: 'Zucchini & Paprika', amount: '400 g', dept: 'Obst & Gemüse' }, { name: 'Feta-Käse', amount: '150 g', dept: 'Kühlregal' }], steps: ['Gemüse würfeln und bei 200 °C 20 Min. rösten.', 'Quinoa garen und mit Gemüse sowie Feta anrichten.'] },
+        { id: 'seed-4', isCustom: false, emoji: '🌮', cuisine: 'Mexikanisch', title: 'Schwarze-Bohnen-Tacos mit Avocado & Limette', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Gluten'], prepTime: 20, kcal: 560, baseCost: 5.90, ingredients: [{ name: 'Maistortillas', amount: '6 Stück', dept: 'Backwaren' }, { name: 'Schwarze Bohnen (Dose)', amount: '1 Dose', dept: 'Konserven' }, { name: 'Avocado', amount: '1 Stück', dept: 'Obst & Gemüse' }], steps: ['Bohnen mit Kreuzkümmel erhitzen.', 'Tortillas füllen und mit Avocado sowie Limettensaft toppen.'] },
+        { id: 'seed-5', isCustom: false, emoji: '🥘', cuisine: 'Deutsch / Hausmannskost', title: 'Herzhafte Kartoffel-Gemüse-Pfanne mit Kräuterquark', tags: ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Laktose'], prepTime: 30, kcal: 510, baseCost: 4.50, ingredients: [{ name: 'Kartoffeln', amount: '600 g', dept: 'Obst & Gemüse' }, { name: 'Karotten & Lauch', amount: '300 g', dept: 'Obst & Gemüse' }, { name: 'Speisequark', amount: '250 g', dept: 'Kühlregal' }], steps: ['Kartoffelscheiben goldbraun braten, Gemüse mitgaren.', 'Kräuterquark glattrühren und dazu servieren.'] },
+        { id: 'seed-6', isCustom: false, emoji: '🍜', cuisine: 'Asiatisch', title: 'Gebratene Reisnudeln mit Pak Choi, Tofu & Sesam', tags: ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'], allergens: ['Soja'], prepTime: 20, kcal: 550, baseCost: 6.10, ingredients: [{ name: 'Reisnudeln', amount: '200 g', dept: 'Asia / Trockensortiment' }, { name: 'Räuchertofu', amount: '200 g', dept: 'Kühlregal' }, { name: 'Pak Choi & Karotten', amount: '300 g', dept: 'Obst & Gemüse' }], steps: ['Reisnudeln einweichen.', 'Tofu und Gemüse scharf anbraten, Nudeln und Sojasauce unterheben.'] },
+        { id: 'seed-7', isCustom: false, emoji: '🐟', cuisine: 'Skandinavisch', title: 'Ofenlachs mit Dill-Senf-Kruste & Zitronen-Brokkoli', tags: ['Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch', 'Low Carb / Keto'], allergens: ['Fisch / Meeresfrüchte', 'Senf'], prepTime: 25, kcal: 580, baseCost: 9.80, ingredients: [{ name: 'Lachsfilet', amount: '300 g', dept: 'Fisch / Kühlregal' }, { name: 'Brokkoli', amount: '400 g', dept: 'Obst & Gemüse' }, { name: 'Bio-Zitrone & Dill', amount: '1 Stück', dept: 'Obst & Gemüse' }], steps: ['Lachs mit Senf und Dill bestreichen.', 'Mit Brokkoli bei 190 °C 18 Min. im Ofen garen.'] },
+        { id: 'seed-8', isCustom: false, emoji: '🍗', cuisine: 'Mediterran', title: 'Zitronen-Hähnchenbrust mit Rosmarinkartoffeln', tags: ['Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)'], allergens: [], prepTime: 30, kcal: 610, baseCost: 7.90, ingredients: [{ name: 'Hähnchenbrustfilet', amount: '320 g', dept: 'Fleisch / Kühlregal' }, { name: 'Drillinge (Kartoffeln)', amount: '500 g', dept: 'Obst & Gemüse' }, { name: 'Kirschtomaten', amount: '200 g', dept: 'Obst & Gemüse' }], steps: ['Kartoffeln mit Rosmarin braten.', 'Hähnchenbrust saftig braten, Kirschtomaten kurz mitschwenken.'] }
       ];
 
       let state = {
@@ -722,6 +869,7 @@
         },
         plan: null,
         checkedShopping: {},
+        recipeLibrary: [...DEFAULT_LIBRARY],
         favorites: [],
         blacklist: [],
         feedbackHistory: [],
@@ -806,7 +954,6 @@
         }
       }
 
-      // 0-TOKEN KEY CHECK: Reads only model metadata without consuming generation quota
       async function verifyApiKeyZeroTokens(apiKey) {
         const res = await fetchWithTimeout(
           `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}?key=${encodeURIComponent(apiKey)}`,
@@ -830,11 +977,11 @@
         return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
       }
 
-      // STRICTLY 1 SINGLE REQUEST – NO RETRY LOOPS THAT DRAIN FREE-TIER TOKENS
-      async function callGeminiSingleShot(promptText, timeoutMs = 45000) {
+      async function callGeminiSingleShot(promptText, timeoutMs = 55000) {
         const apiKey = getApiKey();
         if (!apiKey) {
-          throw new Error('NO_KEY');
+          openApiKeyModal();
+          throw new Error('Bitte zuerst deinen Google Gemini API-Key hinterlegen.');
         }
 
         const response = await fetchWithTimeout(
@@ -845,8 +992,8 @@
             body: JSON.stringify({
               contents: [{ parts: [{ text: promptText }] }],
               generationConfig: {
-                temperature: 0.75,
-                maxOutputTokens: 2800
+                temperature: 0.9,
+                maxOutputTokens: 4800
               }
             })
           },
@@ -857,7 +1004,7 @@
         if (!response.ok) {
           const msg = data?.error?.message || `HTTP ${response.status}`;
           if (response.status === 429 || /quota|rate limit/i.test(msg)) {
-            throw new Error('RATE_LIMIT');
+            throw new Error('Google Free-Tier Ratenlimit erreicht (bitte 1 Minute warten oder „📚 Aus meiner Bibliothek mischen“ nutzen).');
           }
           throw new Error(msg);
         }
@@ -866,22 +1013,33 @@
         return extractJsonObject(rawText);
       }
 
-      // SMART LOCAL FALLBACK ENGINE (0 API TOKENS, RESPECTS DIET, ALLERGIES, NOGOS, BUDGET)
-      function buildOfflineMealPlan(activeSlots, excludeTitles = []) {
+      // USER-CONTROLLED LIBRARY MIXER (ONLY RUNS WHEN EXPLICITLY CLICKED BY USER)
+      function buildPlanFromUserLibrary(activeSlots, excludeTitles = []) {
         const p = state.prefs;
         const personFactor = Math.max(0.6, (Number(p.adults) || 2) * 1.0 + (Number(p.children) || 0) * 0.6) / 2.0;
 
-        const filteredPool = OFFLINE_RECIPES.filter(r => {
-          if (!r.tags.includes(p.diet)) return false;
-          if (p.allergies.some(a => r.allergens.includes(a))) return false;
-          const fullText = `${r.title} ${r.ingredients.map(i => i.name).join(' ')}`.toLowerCase();
+        let pool = (state.recipeLibrary || []).filter(r => {
+          if (Array.isArray(r.tags) && r.tags.length > 0 && !r.tags.includes(p.diet)) return false;
+          if (Array.isArray(r.allergens) && p.allergies.some(a => r.allergens.includes(a))) return false;
+          const fullText = `${r.title} ${(r.ingredients || []).map(i => i.name).join(' ')}`.toLowerCase();
           if (p.nogos.some(ng => fullText.includes(ng.toLowerCase().replace(/\s*\(.*?\)/g, '')))) return false;
-          if (state.blacklist.includes(r.title) || excludeTitles.includes(r.title)) return false;
+          if (state.blacklist.some(b => b.toLowerCase() === r.title.toLowerCase())) return false;
+          if (excludeTitles.includes(r.title)) return false;
           return true;
         });
 
-        const pool = filteredPool.length >= 3 ? filteredPool : OFFLINE_RECIPES;
-        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        if (pool.length === 0) {
+          pool = (state.recipeLibrary || []).filter(r => !state.blacklist.some(b => b.toLowerCase() === r.title.toLowerCase()));
+        }
+        if (pool.length === 0) return [];
+
+        const favTitles = new Set(state.favorites.map(f => f.title));
+        const shuffled = [...pool].sort((a, b) => {
+          const aScore = (a.isCustom ? 2 : 0) + (favTitles.has(a.title) ? 2 : 0) + Math.random() * 2;
+          const bScore = (b.isCustom ? 2 : 0) + (favTitles.has(b.title) ? 2 : 0) + Math.random() * 2;
+          return bScore - aScore;
+        });
+
         let cookIdx = 0;
         let lastCookedTitle = 'Vortagsgericht';
 
@@ -895,7 +1053,7 @@
               emoji: '🥡',
               cuisine: 'Resteverwertung',
               title: `Reste: ${lastCookedTitle}`,
-              desc: 'Bereits vorgekochte Portion vom Vortag – spart Zeit und Budget.',
+              desc: 'Bereits vorgekochte Portion vom Vortag.',
               prepTime: 10,
               kcal: 510,
               estimatedCost: 0,
@@ -907,22 +1065,22 @@
           const tpl = shuffled[cookIdx % shuffled.length];
           cookIdx++;
           lastCookedTitle = tpl.title;
-          const scaledCost = Math.round(tpl.baseCost * personFactor * 100) / 100;
+          const scaledCost = Math.round((Number(tpl.baseCost) || 6.0) * personFactor * 100) / 100;
 
           return {
             id: slot.id,
             day: slot.day,
             slot: slot.slot,
             isLeftover: false,
-            emoji: tpl.emoji,
-            cuisine: tpl.cuisine,
+            emoji: tpl.emoji || '🍽️',
+            cuisine: tpl.cuisine || 'Bibliothek',
             title: tpl.title,
-            desc: `${tpl.title} – abgestimmt auf ${p.adults} Erw.${p.children ? ` & ${p.children} Ki.` : ''}.`,
-            prepTime: tpl.prepTime,
-            kcal: tpl.kcal,
+            desc: tpl.desc || `${tpl.title} aus deiner Bibliothek.`,
+            prepTime: tpl.prepTime || 25,
+            kcal: tpl.kcal || 540,
             estimatedCost: scaledCost,
-            ingredients: tpl.ingredients.map(i => ({ ...i })),
-            steps: [...tpl.steps]
+            ingredients: (tpl.ingredients || []).map(i => ({ ...i })),
+            steps: [...(tpl.steps || [])]
           };
         });
       }
@@ -935,17 +1093,45 @@
 
       function loadState() {
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            state = { ...state, ...parsed, prefs: { ...state.prefs, ...(parsed.prefs || {}) } };
+          const rawMem = localStorage.getItem(PROFILE_MEMORY_KEY);
+          if (rawMem) {
+            const mem = JSON.parse(rawMem);
+            if (mem.prefs) state.prefs = { ...state.prefs, ...mem.prefs };
+            if (Array.isArray(mem.recipeLibrary) && mem.recipeLibrary.length > 0) state.recipeLibrary = mem.recipeLibrary;
+            if (Array.isArray(mem.favorites)) state.favorites = mem.favorites;
+            if (Array.isArray(mem.blacklist)) state.blacklist = mem.blacklist;
+            if (Array.isArray(mem.feedbackHistory)) state.feedbackHistory = mem.feedbackHistory;
+            if (mem.mealImages) state.mealImages = mem.mealImages;
+          }
+        } catch (_) {}
+
+        try {
+          const rawPlan = localStorage.getItem(PLAN_SESSION_KEY);
+          if (rawPlan) {
+            const sess = JSON.parse(rawPlan);
+            if (Array.isArray(sess.plan)) state.plan = sess.plan;
+            if (sess.checkedShopping) state.checkedShopping = sess.checkedShopping;
+            if (sess.currentStep) state.currentStep = sess.currentStep;
           }
         } catch (_) {}
       }
 
       function saveState() {
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          localStorage.setItem(PROFILE_MEMORY_KEY, JSON.stringify({
+            prefs: state.prefs,
+            recipeLibrary: state.recipeLibrary,
+            favorites: state.favorites,
+            blacklist: state.blacklist,
+            feedbackHistory: state.feedbackHistory,
+            mealImages: state.mealImages
+          }));
+
+          localStorage.setItem(PLAN_SESSION_KEY, JSON.stringify({
+            currentStep: state.currentStep,
+            plan: state.plan,
+            checkedShopping: state.checkedShopping
+          }));
         } catch (_) {}
       }
 
@@ -1231,8 +1417,8 @@
         document.getElementById('btn-generate-plan').classList.toggle('hidden', state.currentStep !== 5);
       }
 
-      // ==================== 1-REQUEST GENERATION + INSTANT LOCAL FALLBACK ====================
-      async function generateMealPlan() {
+      // ==================== STRICT ONLINE GENERATION (1 REQUEST, NO SILENT OFFLINE FALLBACK) ====================
+      async function generateMealPlanOnline() {
         const p = state.prefs;
         const activeSlots = [];
         p.schedule.forEach(row => {
@@ -1245,37 +1431,65 @@
           return;
         }
 
+        const cookSlotsCount = activeSlots.filter(s => s.mode === 'cook').length;
+        const customUserRecipes = (state.recipeLibrary || []).filter(r => r.isCustom).map(r => r.title);
         const overlay = document.getElementById('loading-overlay');
-        document.getElementById('loading-title').textContent = 'Wochenplan wird erstellt...';
-        document.getElementById('loading-subtitle').textContent = 'Sparsamer Einzel-Request an Gemini...';
+        document.getElementById('loading-title').textContent = 'Gemini KI generiert deinen Online-Plan...';
+        document.getElementById('loading-subtitle').textContent = `Erstelle ${cookSlotsCount} verschiedene Live-Rezepte (1 Request)...`;
         overlay.classList.remove('hidden');
 
-        let mealsResult = null;
-        let usedSource = 'Gemini KI';
-
         try {
-          const prompt = `Antworte NUR als kompaktes JSON ohne Markdown. Plane diese ${activeSlots.length} Slots für ${p.adults} Erw., ${p.children} Ki., Budget ${p.budget}€, Ernährung: ${p.diet}, Allergien meiden: ${p.allergies.join(',') || 'keine'}, No-Gos meiden: ${p.nogos.join(',') || 'keine'}, Max. Zeit: ${p.maxCookTime} Min., Ziele: ${p.goals.join(',')}.
+          const prompt = `Antworte NUR als valides JSON ohne Markdown-Blöcke. Plane exakt diese ${activeSlots.length} Slots für ${p.adults} Erw., ${p.children} Ki., Budget ${p.budget}€ gesamt.
+Ernährung: ${p.diet} | Allergien MEIDEN: ${p.allergies.join(', ') || 'keine'} | No-Gos MEIDEN: ${p.nogos.join(', ') || 'keine'}
+Küchen: ${p.cuisines.join(', ') || 'alle'} | Max. Zeit: ${p.maxCookTime} Min. | Ziele: ${p.goals.join(', ')} ${p.customGoal || ''}
+EIGENE BIBLIOTHEKS-REZEPTE DES NUTZERS (gerne passende davon einbauen): ${customUserRecipes.join(', ') || 'keine'}
+FAVORITEN (gerne einbauen): ${state.favorites.map(f => f.title).join(', ') || 'keine'}
+BLACKLIST (STRIKT VERBOTEN): ${state.blacklist.join(', ') || 'keine'}
+KI-LERNREGELN DES NUTZERS (UNBEDINGT BEACHTEN): ${state.feedbackHistory.join(' | ') || 'keine'}
+
+WICHTIGSTE REGEL ZUR ABWECHSLUNG:
+- Jeder der ${cookSlotsCount} Slots mit mode="cook" MUSS ein komplett anderes, eigenständiges Gericht mit unterschiedlicher Hauptzutat sein! Keine doppelten Titel in der Woche!
+- Für mode="leftover": isLeftover:true, estimatedCost:0, ingredients:[], sinnvolle Reste eines vorherigen Gerichts.
+
 Slots: ${JSON.stringify(activeSlots)}
-Für mode="leftover": isLeftover:true, estimatedCost:0, ingredients:[].
 Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLeftover":false,"emoji":"🍝","cuisine":"Italienisch","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":550,"estimatedCost":6.5,"ingredients":[{"name":"Zutat","amount":"250 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}]}`;
 
-          const parsed = await callGeminiSingleShot(prompt, 45000);
-          if (parsed && Array.isArray(parsed.meals) && parsed.meals.length > 0) {
-            mealsResult = parsed.meals;
-          } else {
-            throw new Error('EMPTY_RESULT');
+          const parsed = await callGeminiSingleShot(prompt, 55000);
+          if (!parsed || !Array.isArray(parsed.meals) || parsed.meals.length === 0) {
+            throw new Error('Die KI hat kein gültiges Rezept-Array zurückgegeben.');
           }
+
+          state.plan = parsed.meals;
+          state.checkedShopping = {};
+          state.plan.forEach(m => {
+            if (!m.isLeftover && !state.mealImages[m.title]) {
+              state.mealImages[m.title] = generateFoodPhotoCanvas(m);
+            }
+          });
+          saveState();
+          showDashboard('Live mit Gemini 3.8 Flash generiert');
+          showToast('✨ Online-Wochenplan erfolgreich erstellt!');
         } catch (err) {
-          // Automatic offline fallback when rate-limited (429) or no key configured – 0 extra tokens spent!
-          mealsResult = buildOfflineMealPlan(activeSlots);
-          usedSource = err.message === 'RATE_LIMIT'
-            ? 'Offline-Planer (Google Free-Tier Pause aktiv)'
-            : 'Offline-Planer (lokal berechnet)';
+          showToast(`Online-Fehler: ${err.message}`);
         } finally {
           overlay.classList.add('hidden');
         }
+      }
 
-        state.plan = mealsResult;
+      function generateMealPlanFromLibraryExplicit() {
+        const p = state.prefs;
+        const activeSlots = [];
+        p.schedule.forEach(row => {
+          if (row.lunch !== 'off') activeSlots.push({ id: `${row.day}-lunch`, day: row.day, slot: 'Mittagessen', mode: row.lunch });
+          if (row.dinner !== 'off') activeSlots.push({ id: `${row.day}-dinner`, day: row.day, slot: 'Abendessen', mode: row.dinner });
+        });
+
+        const meals = buildPlanFromUserLibrary(activeSlots);
+        if (meals.length === 0) {
+          showToast('Keine passenden Rezepte in deiner Bibliothek gefunden.');
+          return;
+        }
+        state.plan = meals;
         state.checkedShopping = {};
         state.plan.forEach(m => {
           if (!m.isLeftover && !state.mealImages[m.title]) {
@@ -1283,8 +1497,8 @@ Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLe
           }
         });
         saveState();
-        showDashboard(usedSource);
-        showToast(`✅ Wochenplan erstellt (${usedSource})!`);
+        showDashboard('Aus deiner Rezept-Bibliothek zusammengestellt');
+        showToast('📚 Wochenplan aus deiner Bibliothek erstellt!');
       }
 
       async function swapSingleMeal(mealId, customWish) {
@@ -1293,30 +1507,27 @@ Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLe
         if (!meal) return;
 
         const overlay = document.getElementById('loading-overlay');
-        document.getElementById('loading-title').textContent = 'Neues Rezept wird gewählt...';
-        document.getElementById('loading-subtitle').textContent = '1 Request an Gemini (mit Offline-Backup)...';
+        document.getElementById('loading-title').textContent = 'Neues Rezept wird online generiert...';
+        document.getElementById('loading-subtitle').textContent = '1 Request an Gemini...';
         overlay.classList.remove('hidden');
 
         try {
           const p = state.prefs;
           const existingTitles = state.plan.map(m => m.title);
-          const prompt = `Antworte NUR mit JSON ohne Markdown. 1 neues Rezept für ${meal.day} (${meal.slot}), ${p.diet}, Allergien meiden: ${p.allergies.join(',') || 'keine'}, No-Gos meiden: ${p.nogos.join(',') || 'keine'}, Wunsch: ${customWish || 'Abwechslung'}. Nicht: ${existingTitles.join(', ')}.
+          const prompt = `Antworte NUR mit JSON ohne Markdown. 1 neues Rezept für ${meal.day} (${meal.slot}), ${p.diet}, Allergien meiden: ${p.allergies.join(',') || 'keine'}, No-Gos meiden: ${p.nogos.join(',') || 'keine'}, Lernregeln: ${state.feedbackHistory.join('; ') || 'keine'}, Wunsch: ${customWish || 'Abwechslung'}. Nicht wiederholen: ${existingTitles.join(', ')}. Blacklist: ${state.blacklist.join(', ') || 'keine'}.
 Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":550,"estimatedCost":6.2,"ingredients":[{"name":"Zutat","amount":"200 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}`;
 
-          const newMeal = await callGeminiSingleShot(prompt, 25000);
+          const newMeal = await callGeminiSingleShot(prompt, 30000);
           Object.assign(meal, { ...newMeal, isLeftover: false });
-          showToast('🎲 Neues KI-Rezept eingesetzt!');
-        } catch (_) {
-          const existingTitles = state.plan.map(m => m.title);
-          const [fallbackMeal] = buildOfflineMealPlan([{ id: meal.id, day: meal.day, slot: meal.slot, mode: 'cook' }], existingTitles);
-          Object.assign(meal, fallbackMeal);
-          showToast('🎲 Alternative aus Offline-Rezeptbuch eingesetzt!');
-        } finally {
           state.mealImages[meal.title] = generateFoodPhotoCanvas(meal);
           saveState();
           updateDashboardBudgetUI();
           renderMealPlanGrid();
           renderShoppingList();
+          showToast('🎲 Neues KI-Rezept eingesetzt!');
+        } catch (err) {
+          showToast(`Online-Fehler: ${err.message}`);
+        } finally {
           overlay.classList.add('hidden');
         }
       }
@@ -1378,6 +1589,7 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
 
         state.plan.forEach(meal => {
           const isFav = state.favorites.some(f => f.title === meal.title);
+          const inLib = state.recipeLibrary.some(r => r.title.toLowerCase() === (meal.title || '').toLowerCase());
           const imgUrl = state.mealImages[meal.title];
 
           const card = document.createElement('div');
@@ -1406,9 +1618,10 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
               <div class="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-stone-100">
                 <button type="button" data-open-meal="${meal.id}" class="text-xs font-bold text-sage-700 hover:underline">Rezept & Details →</button>
                 <div class="flex items-center gap-1">
+                  ${!meal.isLeftover ? `<button type="button" data-quick-lib="${meal.id}" title="In Bibliothek speichern" class="p-1.5 rounded-xl hover:bg-sage-50 text-xs">${inLib ? '📗' : '📚'}</button>` : ''}
                   <button type="button" data-quick-fav="${meal.id}" title="Favorisieren" class="p-1.5 rounded-xl hover:bg-rose-50 text-xs">${isFav ? '❤️' : '🤍'}</button>
                   <button type="button" data-quick-leftover="${meal.id}" title="Reste auf nächsten Slot schieben" class="p-1.5 rounded-xl hover:bg-amber-50 text-xs">🥡</button>
-                  <button type="button" data-quick-swap="${meal.id}" title="Gericht tauschen" class="p-1.5 rounded-xl hover:bg-sage-50 text-xs">🎲</button>
+                  <button type="button" data-quick-swap="${meal.id}" title="Online neu generieren" class="p-1.5 rounded-xl hover:bg-sage-50 text-xs">🎲</button>
                 </div>
               </div>
             </div>
@@ -1419,6 +1632,9 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         container.querySelectorAll('[data-open-meal]').forEach(btn => {
           btn.addEventListener('click', () => openRecipeModal(btn.dataset.openMeal));
         });
+        container.querySelectorAll('[data-quick-lib]').forEach(btn => {
+          btn.addEventListener('click', () => saveMealToLibrary(btn.dataset.quickLib));
+        });
         container.querySelectorAll('[data-quick-fav]').forEach(btn => {
           btn.addEventListener('click', () => toggleFavoriteMeal(btn.dataset.quickFav));
         });
@@ -1428,6 +1644,133 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         container.querySelectorAll('[data-quick-swap]').forEach(btn => {
           btn.addEventListener('click', () => swapSingleMeal(btn.dataset.quickSwap, ''));
         });
+      }
+
+      // ==================== RENDER INTERACTIVE RECIPE LIBRARY ====================
+      function renderRecipeLibrary() {
+        const lib = state.recipeLibrary || [];
+        document.getElementById('lib-count-badge').textContent = String(lib.length);
+
+        const query = (document.getElementById('input-lib-search')?.value || '').trim().toLowerCase();
+        const filter = document.getElementById('select-lib-filter')?.value || 'all';
+
+        const filtered = lib.filter(r => {
+          if (filter === 'custom' && !r.isCustom) return false;
+          if (filter !== 'all' && filter !== 'custom' && (!Array.isArray(r.tags) || !r.tags.includes(filter))) return false;
+          if (query) {
+            const hay = `${r.title} ${r.cuisine} ${(r.ingredients || []).map(i => i.name).join(' ')}`.toLowerCase();
+            if (!hay.includes(query)) return false;
+          }
+          return true;
+        });
+
+        const container = document.getElementById('library-grid-container');
+        container.innerHTML = '';
+
+        if (filtered.length === 0) {
+          container.innerHTML = '<p class="text-sm text-stone-500 col-span-full">Keine Rezepte für diesen Filter gefunden. Füge oben über „➕ Neues Rezept hinzufügen“ eigene Rezepte hinzu.</p>';
+          return;
+        }
+
+        filtered.forEach(r => {
+          const card = document.createElement('div');
+          card.className = 'p-4 rounded-2xl bg-cream border border-stone-200 flex flex-col justify-between gap-3';
+          const ingSummary = (r.ingredients || []).map(i => `${i.amount} ${i.name}`).join(', ');
+
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between gap-2 text-[11px] font-semibold mb-1">
+                <div class="flex items-center gap-1.5">
+                  <span class="px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-700">${r.cuisine || 'Rezept'}</span>
+                  ${r.isCustom ? '<span class="px-2 py-0.5 rounded-full bg-terracotta-100 text-terracotta-600">Eigenes Rezept</span>' : ''}
+                </div>
+                <span class="text-stone-500">${r.prepTime || 25} Min. · ~ ${formatEuro(r.baseCost || 6)}</span>
+              </div>
+              <h3 class="font-bold text-stone-900 text-sm sm:text-base">${r.emoji || '🍽️'} ${r.title}</h3>
+              <p class="text-xs text-stone-600 mt-1 line-clamp-2"><strong>Zutaten:</strong> ${ingSummary || 'Keine hinterlegt'}</p>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-2 border-t border-stone-200/80">
+              <button type="button" data-lib-insert="${r.id}" class="text-xs font-bold text-sage-700 hover:underline">📅 In aktuellen Wochenplan einsetzen</button>
+              <button type="button" data-lib-delete="${r.id}" class="text-xs px-2.5 py-1 rounded-lg bg-white border border-stone-300 text-stone-600 hover:bg-red-50 hover:text-red-700">🗑️ Löschen</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+        container.querySelectorAll('[data-lib-delete]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.libDelete;
+            state.recipeLibrary = state.recipeLibrary.filter(r => r.id !== id);
+            saveState();
+            renderRecipeLibrary();
+            showToast('🗑️ Rezept aus Bibliothek entfernt.');
+          });
+        });
+
+        container.querySelectorAll('[data-lib-insert]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const recipe = state.recipeLibrary.find(r => r.id === btn.dataset.libInsert);
+            if (!recipe || !Array.isArray(state.plan) || state.plan.length === 0) {
+              showToast('Bitte erstelle zuerst einen Wochenplan, in den das Rezept eingesetzt werden soll.');
+              return;
+            }
+            const choices = state.plan.map((m, idx) => `${idx + 1}: ${m.day} (${m.slot}) – ${m.title}`).join('\n');
+            const pick = prompt(`Auf welchen Slot soll „${recipe.title}“ gesetzt werden? (Nummer eingeben):\n\n${choices}`, '1');
+            if (pick !== null) {
+              const idx = Number(pick) - 1;
+              if (state.plan[idx]) {
+                Object.assign(state.plan[idx], {
+                  isLeftover: false,
+                  emoji: recipe.emoji || '🍽️',
+                  cuisine: recipe.cuisine || 'Bibliothek',
+                  title: recipe.title,
+                  desc: recipe.desc || `${recipe.title} aus deiner Rezept-Bibliothek.`,
+                  prepTime: recipe.prepTime || 25,
+                  kcal: recipe.kcal || 540,
+                  estimatedCost: Number(recipe.baseCost) || 6.0,
+                  ingredients: (recipe.ingredients || []).map(i => ({ ...i })),
+                  steps: [...(recipe.steps || [])]
+                });
+                state.mealImages[recipe.title] = generateFoodPhotoCanvas(state.plan[idx]);
+                saveState();
+                updateDashboardBudgetUI();
+                renderMealPlanGrid();
+                renderShoppingList();
+                showToast(`✅ „${recipe.title}“ eingesetzt!`);
+              }
+            }
+          });
+        });
+      }
+
+      function saveMealToLibrary(mealId) {
+        const meal = (state.plan || []).find(m => m.id === mealId);
+        if (!meal || meal.isLeftover) return;
+        const exists = state.recipeLibrary.some(r => r.title.toLowerCase() === meal.title.toLowerCase());
+        if (exists) {
+          showToast('Dieses Rezept ist bereits in deiner Bibliothek gespeichert.');
+          return;
+        }
+        state.recipeLibrary.unshift({
+          id: 'custom-' + Date.now(),
+          isCustom: true,
+          emoji: meal.emoji || '🍽️',
+          cuisine: meal.cuisine || 'KI-Kreation',
+          title: meal.title,
+          desc: meal.desc || '',
+          tags: [state.prefs.diet],
+          allergens: [],
+          prepTime: meal.prepTime || 25,
+          kcal: meal.kcal || 540,
+          baseCost: parsePrice(meal.estimatedCost) || 6.0,
+          ingredients: (meal.ingredients || []).map(i => ({ ...i })),
+          steps: [...(meal.steps || [])]
+        });
+        saveState();
+        renderRecipeLibrary();
+        renderMealPlanGrid();
+        showToast('📚 Rezept dauerhaft in deiner Bibliothek gespeichert!');
       }
 
       function renderShoppingList() {
@@ -1538,7 +1881,7 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
       function renderFeedbackHistory() {
         const box = document.getElementById('feedback-history-list');
         box.innerHTML = state.feedbackHistory.length === 0
-          ? '<p class="text-xs text-stone-500">Noch keine Rückmeldungen gespeichert.</p>'
+          ? '<p class="text-xs text-stone-500">Noch keine Lernregeln gespeichert.</p>'
           : state.feedbackHistory.map((fb, i) => `
               <div class="p-3 rounded-2xl bg-sage-50 border border-sage-200 flex items-center justify-between gap-2 text-xs">
                 <span class="text-stone-800 font-medium">✓ ${fb}</span>
@@ -1567,6 +1910,7 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         updateDashboardBudgetUI();
         renderMealPlanGrid();
         renderShoppingList();
+        renderRecipeLibrary();
         renderFavoritesAndBlacklist();
         renderFeedbackHistory();
       }
@@ -1588,7 +1932,7 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
           showToast('Aus Favoriten entfernt');
         } else {
           state.favorites.push({ ...meal });
-          showToast('❤️ Als Favorit gespeichert!');
+          showToast('❤️ Dauerhaft als Favorit gespeichert!');
         }
         saveState();
         renderMealPlanGrid();
@@ -1660,12 +2004,7 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         });
 
         document.getElementById('btn-repair-app').addEventListener('click', () => {
-          const preservedKey = getApiKey();
-          Object.keys(localStorage).forEach(k => {
-            if (k.startsWith('kulinaris_')) localStorage.removeItem(k);
-          });
-          if (preservedKey) localStorage.setItem(API_KEY_STORAGE, preservedKey);
-          localStorage.setItem(VERSION_STORAGE, APP_VERSION);
+          localStorage.removeItem(PLAN_SESSION_KEY);
           window.location.href = window.location.pathname;
         });
 
@@ -1843,10 +2182,11 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         });
         document.getElementById('btn-prev-step').addEventListener('click', () => goToStep(state.currentStep - 1));
         document.getElementById('btn-next-step').addEventListener('click', () => goToStep(state.currentStep + 1));
-        document.getElementById('btn-generate-plan').addEventListener('click', () => generateMealPlan());
+        document.getElementById('btn-generate-plan').addEventListener('click', () => generateMealPlanOnline());
 
         document.getElementById('btn-open-wizard').addEventListener('click', showWizard);
-        document.getElementById('btn-regenerate-week').addEventListener('click', generateMealPlan);
+        document.getElementById('btn-regenerate-week').addEventListener('click', generateMealPlanOnline);
+        document.getElementById('btn-generate-from-library').addEventListener('click', generateMealPlanFromLibraryExplicit);
 
         document.getElementById('btn-quick-edit-budget').addEventListener('click', () => {
           const next = prompt('Neues Wochenbudget in Euro:', String(state.prefs.budget));
@@ -1859,17 +2199,6 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
               refreshAllWizardNumbers();
             }
           }
-        });
-
-        document.getElementById('btn-generate-all-images').addEventListener('click', () => {
-          (state.plan || []).forEach(m => {
-            if (!state.mealImages[m.title]) {
-              state.mealImages[m.title] = generateFoodPhotoCanvas(m);
-            }
-          });
-          saveState();
-          renderMealPlanGrid();
-          showToast('📸 Vorschaubilder aktualisiert!');
         });
 
         document.querySelectorAll('.dash-tab').forEach(btn => {
@@ -1885,6 +2214,64 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
             });
           });
         });
+
+        // Library Add / Filter Events
+        document.getElementById('btn-toggle-add-recipe').addEventListener('click', () => {
+          document.getElementById('form-add-recipe').classList.toggle('hidden');
+        });
+        document.getElementById('btn-cancel-add-recipe').addEventListener('click', () => {
+          document.getElementById('form-add-recipe').classList.add('hidden');
+        });
+        document.getElementById('form-add-recipe').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const title = document.getElementById('lib-new-title').value.trim();
+          const cuisine = document.getElementById('lib-new-cuisine').value;
+          const emoji = document.getElementById('lib-new-emoji').value.trim() || '🍽️';
+          const prepTime = Number(document.getElementById('lib-new-time').value) || 25;
+          const baseCost = Number(document.getElementById('lib-new-cost').value) || 6.0;
+          const diet = document.getElementById('lib-new-diet').value;
+
+          const rawIngs = document.getElementById('lib-new-ingredients').value.split('\n').map(l => l.trim()).filter(Boolean);
+          const ingredients = rawIngs.map(line => {
+            const match = line.match(/^([\d.,]+\s*(?:g|kg|ml|l|EL|TL|Stück|Dose|Dosen|Bund|Pkg\.?)?)\s+(.+)$/i);
+            return match
+              ? { amount: match[1].trim(), name: match[2].trim(), dept: 'Eigene Zutaten' }
+              : { amount: '1×', name: line, dept: 'Eigene Zutaten' };
+          });
+
+          const steps = document.getElementById('lib-new-steps').value.split('\n').map(l => l.trim()).filter(Boolean);
+
+          const tags = diet === 'Vegan'
+            ? ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch']
+            : diet === 'Vegetarisch'
+              ? ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch']
+              : [diet, 'Allesesser (Mischkost)'];
+
+          state.recipeLibrary.unshift({
+            id: 'custom-' + Date.now(),
+            isCustom: true,
+            emoji,
+            cuisine,
+            title,
+            desc: `Eigenes Rezept (${cuisine})`,
+            tags,
+            allergens: [],
+            prepTime,
+            kcal: 550,
+            baseCost,
+            ingredients,
+            steps
+          });
+
+          saveState();
+          e.target.reset();
+          document.getElementById('form-add-recipe').classList.add('hidden');
+          renderRecipeLibrary();
+          showToast(`📚 „${title}“ zu deiner Bibliothek hinzugefügt!`);
+        });
+
+        document.getElementById('input-lib-search').addEventListener('input', renderRecipeLibrary);
+        document.getElementById('select-lib-filter').addEventListener('change', renderRecipeLibrary);
 
         document.getElementById('btn-export-notes').addEventListener('click', async () => {
           const lines = [`🛒 Einkaufsliste (Kulinaris – Budget ${formatEuro(state.prefs.budget)})`, ''];
@@ -1915,6 +2302,18 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
           a.click();
         });
 
+        document.getElementById('btn-add-manual-ban').addEventListener('click', () => {
+          const inp = document.getElementById('input-manual-ban');
+          const val = inp.value.trim();
+          if (val && !state.blacklist.includes(val)) {
+            state.blacklist.unshift(val);
+            inp.value = '';
+            saveState();
+            renderFavoritesAndBlacklist();
+            showToast('🚫 Dauerhaft auf Blacklist gespeichert!');
+          }
+        });
+
         document.querySelectorAll('.fb-tag').forEach(btn => {
           btn.addEventListener('click', () => {
             const ta = document.getElementById('input-feedback-text');
@@ -1930,7 +2329,55 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
           ta.value = '';
           saveState();
           renderFeedbackHistory();
-          showToast('🧠 Rückmeldung gespeichert!');
+          showToast('🧠 Lernregel dauerhaft gespeichert!');
+        });
+
+        document.getElementById('btn-export-profile-copy').addEventListener('click', async () => {
+          const backup = JSON.stringify({
+            prefs: state.prefs,
+            recipeLibrary: state.recipeLibrary,
+            favorites: state.favorites,
+            blacklist: state.blacklist,
+            feedbackHistory: state.feedbackHistory
+          });
+          try { await navigator.clipboard.writeText(backup); } catch (_) {}
+          showToast('📋 Backup-Code (inkl. Bibliothek) kopiert!');
+        });
+
+        document.getElementById('btn-export-profile-file').addEventListener('click', () => {
+          const backup = JSON.stringify({
+            prefs: state.prefs,
+            recipeLibrary: state.recipeLibrary,
+            favorites: state.favorites,
+            blacklist: state.blacklist,
+            feedbackHistory: state.feedbackHistory
+          }, null, 2);
+          const blob = new Blob([backup], { type: 'application/json;charset=utf-8' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'kulinaris-komplett-backup.json';
+          a.click();
+        });
+
+        document.getElementById('btn-import-profile').addEventListener('click', () => {
+          const raw = document.getElementById('input-import-profile').value.trim();
+          if (!raw) return;
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed.prefs) state.prefs = { ...state.prefs, ...parsed.prefs };
+            if (Array.isArray(parsed.recipeLibrary)) state.recipeLibrary = parsed.recipeLibrary;
+            if (Array.isArray(parsed.favorites)) state.favorites = parsed.favorites;
+            if (Array.isArray(parsed.blacklist)) state.blacklist = parsed.blacklist;
+            if (Array.isArray(parsed.feedbackHistory)) state.feedbackHistory = parsed.feedbackHistory;
+            saveState();
+            document.getElementById('input-import-profile').value = '';
+            renderRecipeLibrary();
+            renderFavoritesAndBlacklist();
+            renderFeedbackHistory();
+            showToast('✅ Profil & Bibliothek erfolgreich wiederhergestellt!');
+          } catch (_) {
+            showToast('❌ Ungültiger Backup-Code.');
+          }
         });
 
         document.getElementById('btn-close-recipe-modal').addEventListener('click', () => {
@@ -1945,10 +2392,14 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         document.getElementById('btn-modal-fav').addEventListener('click', () => {
           toggleFavoriteMeal(activeModalMealId);
         });
+        document.getElementById('btn-modal-save-lib').addEventListener('click', () => {
+          saveMealToLibrary(activeModalMealId);
+        });
         document.getElementById('btn-modal-ban').addEventListener('click', async () => {
           const meal = (state.plan || []).find(m => m.id === activeModalMealId);
           if (meal && !state.blacklist.includes(meal.title)) {
             state.blacklist.push(meal.title);
+            saveState();
             document.getElementById('recipe-modal').classList.add('hidden');
             renderFavoritesAndBlacklist();
             await swapSingleMeal(activeModalMealId, '');
