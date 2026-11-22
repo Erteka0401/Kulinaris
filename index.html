@@ -131,6 +131,9 @@
         <button type="button" id="btn-open-share" class="hidden text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl bg-sage-500 text-white hover:bg-sage-600 transition shadow-xs">
           🔗 Teilen
         </button>
+        <button type="button" id="btn-repair-app" title="App-Cache & hängende Daten zurücksetzen (behält API-Key)" class="text-xs font-semibold px-2.5 py-2 rounded-xl border border-stone-200 bg-stone-50 text-stone-600 hover:bg-red-50 hover:text-red-700 transition">
+          🔄 Reset
+        </button>
       </div>
     </div>
   </header>
@@ -634,11 +637,30 @@
 
   <script>
     (function () {
-      const STORAGE_KEY = 'kulinaris_pwa_v7';
+      const APP_VERSION = '2026-11-22-v8';
+      const VERSION_STORAGE = 'kulinaris_app_version';
+      const STORAGE_KEY = 'kulinaris_pwa_v8';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
       const ACTIVE_MODEL_STORAGE = 'kulinaris_gemini_model';
       const DEFAULT_MODEL = 'gemini-3.8-flash';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+
+      // Self-healing version migration: clears stale/corrupted state while keeping user's API key
+      (function enforceVersionCleanState() {
+        try {
+          const savedVer = localStorage.getItem(VERSION_STORAGE);
+          if (savedVer !== APP_VERSION) {
+            const preservedKey = localStorage.getItem(API_KEY_STORAGE);
+            Object.keys(localStorage).forEach(k => {
+              if (k.startsWith('kulinaris_') && k !== API_KEY_STORAGE) {
+                localStorage.removeItem(k);
+              }
+            });
+            if (preservedKey) localStorage.setItem(API_KEY_STORAGE, preservedKey);
+            localStorage.setItem(VERSION_STORAGE, APP_VERSION);
+          }
+        } catch (_) {}
+      })();
 
       const SUPERMARKETS = ['Rewe', 'Edeka', 'Lidl', 'Aldi', 'dm / Bio-Markt', 'Wochenmarkt', 'Penny'];
       const DIETS = ['Allesesser (Mischkost)', 'Vegetarisch', 'Vegan', 'Pescetarisch', 'Flexitarisch (wenig Fleisch)', 'Low Carb / Keto'];
@@ -1603,6 +1625,16 @@ JSON-Format:
         document.getElementById('header-brand').addEventListener('click', () => {
           if (Array.isArray(state.plan) && state.plan.length > 0) showDashboard();
           else showWizard();
+        });
+
+        document.getElementById('btn-repair-app').addEventListener('click', () => {
+          const preservedKey = getApiKey();
+          Object.keys(localStorage).forEach(k => {
+            if (k.startsWith('kulinaris_')) localStorage.removeItem(k);
+          });
+          if (preservedKey) localStorage.setItem(API_KEY_STORAGE, preservedKey);
+          localStorage.setItem(VERSION_STORAGE, APP_VERSION);
+          window.location.href = window.location.pathname;
         });
 
         document.getElementById('btn-open-apikey').addEventListener('click', openApiKeyModal);
