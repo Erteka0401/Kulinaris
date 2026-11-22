@@ -637,9 +637,9 @@
 
   <script>
     (function () {
-      const APP_VERSION = '2026-11-22-v9';
+      const APP_VERSION = '2026-11-22-v10';
       const VERSION_STORAGE = 'kulinaris_app_version';
-      const STORAGE_KEY = 'kulinaris_pwa_v9';
+      const STORAGE_KEY = 'kulinaris_pwa_v10';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
       const ACTIVE_MODEL_STORAGE = 'kulinaris_gemini_model';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
@@ -775,14 +775,14 @@
         }
       }
 
-      async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+      async function fetchWithTimeout(url, options = {}, timeoutMs = 45000) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
           return await fetch(url, { ...options, signal: controller.signal });
         } catch (err) {
           if (err.name === 'AbortError') {
-            throw new Error(`Zeitüberschreitung nach ${Math.round(timeoutMs / 1000)} Sek. (keine Antwort vom Server)`);
+            throw new Error(`Zeitüberschreitung nach ${Math.round(timeoutMs / 1000)} Sek.`);
           }
           throw err;
         } finally {
@@ -790,81 +790,111 @@
         }
       }
 
-      async function discoverAvailableModels(apiKey) {
+      async function getCandidateModels(apiKey) {
         const res = await fetchWithTimeout(
           `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
           {},
-          10000
+          15000
         );
         const data = await res.json();
         if (!res.ok) {
           throw new Error(data?.error?.message || `API-Key ungültig (HTTP ${res.status})`);
         }
-        const available = (data.models || [])
-          .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-          .map(m => m.name.replace(/^models\//, ''));
 
-        if (available.length === 0) {
-          throw new Error('Für diesen API-Key sind keine Text-Generierungsmodelle freigeschaltet.');
+        const all = (data.models || [])
+          .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+          .map(m => m.name.replace(/^models\//, ''))
+          .filter(n => !n.includes('tts') && !n.includes('image') && !n.includes('embedding') && !n.includes('aqa'));
+
+        if (all.length === 0) {
+          throw new Error('Für diesen API-Key sind keine Text-Modelle freigeschaltet.');
         }
 
-        // Prioritize newest flash models first, excluding deprecated/experimental audio-only variants
-        const candidates = available.filter(n => !n.includes('tts') && !n.includes('image') && !n.includes('embedding'));
-        const pool = candidates.length > 0 ? candidates : available;
+        // Order models: preferred flash-lite/flash variants first, then pro models as automatic backup
+        const priority = [
+          n => n.includes('3.8-flash-lite'),
+          n => n.includes('3.8-flash'),
+          n => n.includes('flash-lite'),
+          n => n.includes('flash') && !n.includes('2.5'),
+          n => n.includes('flash'),
+          n => n.includes('pro')
+        ];
 
-        const best = pool.find(n => n === 'gemini-3.8-flash')
-          || pool.find(n => n.includes('3.8-flash'))
-          || pool.find(n => n.includes('flash-latest'))
-          || pool.find(n => n.includes('flash'))
-          || pool[0];
+        const ordered = [];
+        priority.forEach(matchFn => {
+          all.forEach(m => {
+            if (matchFn(m) && !ordered.includes(m)) ordered.push(m);
+          });
+        });
+        all.forEach(m => {
+          if (!ordered.includes(m)) ordered.push(m);
+        });
 
-        localStorage.setItem(ACTIVE_MODEL_STORAGE, best);
-        return best;
+        const cached = localStorage.getItem(ACTIVE_MODEL_STORAGE);
+        if (cached && ordered.includes(cached)) {
+          return [cached, ...ordered.filter(m => m !== cached)];
+        }
+        return ordered;
       }
 
-      async function callGeminiJSON(promptText, timeoutMs = 25000) {
+      async function callGeminiJSON(promptText, timeoutPerModelMs = 55000, onModelSwitch = null) {
         const apiKey = getApiKey();
         if (!apiKey) {
           openApiKeyModal();
           throw new Error('Bitte zuerst deinen Google Gemini API-Key hinterlegen.');
         }
 
-        let model = localStorage.getItem(ACTIVE_MODEL_STORAGE);
-        if (!model) {
-          model = await discoverAvailableModels(apiKey);
-        }
+        const models = await getCandidateModels(apiKey);
+        let lastError = 'Unbekannter API-Fehler';
 
-        const send = (modelName) => fetchWithTimeout(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: promptText }] }],
-              generationConfig: {
-                temperature: 0.85,
-                responseMimeType: 'application/json'
+        // Try up to 4 available models automatically if one is overloaded (503/429) or times out
+        for (let i = 0; i < Math.min(4, models.length); i++) {
+          const modelName = models[i];
+          if (onModelSwitch) onModelSwitch(modelName, i + 1, Math.min(4, models.length));
+
+          try {
+            const response = await fetchWithTimeout(
+              `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  contents: [{ parts: [{ text: promptText }] }],
+                  generationConfig: {
+                    temperature: 0.85,
+                    responseMimeType: 'application/json'
+                  }
+                })
+              },
+              timeoutPerModelMs
+            );
+
+            const data = await response.json();
+            if (!response.ok) {
+              lastError = data?.error?.message || `HTTP ${response.status}`;
+              // If overloaded, rate-limited, or model unavailable -> rotate to next model immediately
+              if ([404, 429, 500, 502, 503, 504].includes(response.status) || /overloaded|busy|capacity|quota/i.test(lastError)) {
+                localStorage.removeItem(ACTIVE_MODEL_STORAGE);
+                continue;
               }
-            })
-          },
-          timeoutMs
-        );
+              throw new Error(lastError);
+            }
 
-        let response = await send(model);
-        if (!response.ok && (response.status === 404 || response.status === 400)) {
-          localStorage.removeItem(ACTIVE_MODEL_STORAGE);
-          model = await discoverAvailableModels(apiKey);
-          response = await send(model);
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+            const parsed = JSON.parse(cleaned);
+            localStorage.setItem(ACTIVE_MODEL_STORAGE, modelName);
+            return { parsed, model: modelName };
+          } catch (err) {
+            lastError = err.message || String(err);
+            localStorage.removeItem(ACTIVE_MODEL_STORAGE);
+            if (/API key not valid|PERMISSION_DENIED/i.test(lastError)) {
+              throw new Error(lastError);
+            }
+          }
         }
 
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data?.error?.message || `HTTP ${response.status}`);
-        }
-
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-        return { parsed: JSON.parse(cleaned), model };
+        throw new Error(`Alle getesteten Modelle sind momentan ausgelastet (${lastError}). Bitte in 30 Sekunden erneut tippen.`);
       }
 
       function openApiKeyModal() {
@@ -894,7 +924,7 @@
         el.textContent = msg;
         el.classList.remove('hidden');
         clearTimeout(el._timer);
-        el._timer = setTimeout(() => el.classList.add('hidden'), 4000);
+        el._timer = setTimeout(() => el.classList.add('hidden'), 4500);
       }
 
       function formatEuro(num) {
@@ -1185,60 +1215,40 @@
         }
 
         const overlay = document.getElementById('loading-overlay');
-        document.getElementById('loading-title').textContent = 'Gemini KI erstellt deinen Wochenplan...';
+        const loadingTitle = document.getElementById('loading-title');
+        const loadingSub = document.getElementById('loading-subtitle');
+        loadingTitle.textContent = 'Gemini KI erstellt deinen Wochenplan...';
+        loadingSub.textContent = 'Verbinde mit Gemini...';
         overlay.classList.remove('hidden');
 
         try {
-          const prompt = `Du bist Kulinaris, ein deutscher Ernährungs- und Kochplaner. Erstelle einen abwechslungsreichen Wochen-Essensplan als reines JSON-Objekt.
+          const prompt = `Du bist Kulinaris, ein deutscher Ernährungs- und Kochplaner. Erstelle einen abwechslungsreichen Wochen-Essensplan als kompaktes JSON-Objekt.
 
-NUTZERPROFIL:
-- Wochenbudget gesamt: ${p.budget} Euro
-- Haushalt: ${p.adults} Erwachsene, ${p.children} Kinder
-- Supermärkte: ${p.supermarkets.join(', ') || 'beliebig'}
-- Ernährungsform: ${p.diet}
-- Allergien (STRIKT MEIDEN): ${p.allergies.join(', ') || 'keine'}
-- Gesundheitshinweise: ${p.healthNotes || 'keine'}
-- No-Go-Zutaten (STRIKT MEIDEN): ${p.nogos.join(', ') || 'keine'}
-- Lieblingsküchen: ${p.cuisines.join(', ') || 'alle'}
-- Max. Kochzeit: ${p.maxCookTime} Minuten
-- Kocherfahrung: ${p.skill}
-- Küchengeräte: ${p.equipment.join(', ')}
-- Restestrategie: ${p.leftoverMode}
-- Ziele: ${p.goals.join(', ')} ${p.customGoal ? '| ' + p.customGoal : ''}
-- Favoriten: ${state.favorites.map(f => f.title).join(', ') || 'keine'}
-- Blacklist (NIEMALS): ${state.blacklist.join(', ') || 'keine'}
-- Nutzer-Feedback: ${state.feedbackHistory.join(' | ') || 'keines'}
+PROFIL:
+Budget: ${p.budget}€ | Haushalt: ${p.adults} Erw., ${p.children} Ki. | Märkte: ${p.supermarkets.join(', ') || 'alle'}
+Ernährung: ${p.diet} | Allergien (MEIDEN): ${p.allergies.join(', ') || 'keine'} | No-Gos (MEIDEN): ${p.nogos.join(', ') || 'keine'}
+Hinweise: ${p.healthNotes || 'keine'} | Küchen: ${p.cuisines.join(', ') || 'alle'} | Max. Zeit: ${p.maxCookTime} Min. | Erfahrung: ${p.skill}
+Geräte: ${p.equipment.join(', ')} | Reste: ${p.leftoverMode} | Ziele: ${p.goals.join(', ')} ${p.customGoal || ''}
+Favoriten: ${state.favorites.map(f => f.title).join(', ') || 'keine'} | Blacklist (NIE): ${state.blacklist.join(', ') || 'keine'}
+Feedback: ${state.feedbackHistory.join(' | ') || 'keines'}
 
-EXAKT ZU FÜLLENDE SLOTS (${activeSlots.length} Einträge):
+SLOTS (${activeSlots.length}):
 ${JSON.stringify(activeSlots)}
 
 REGELN:
-1. Liefere exakt für jeden Eintrag aus den Slots ein Element in "meals" mit derselben "id", "day", "slot".
-2. Wenn mode === "leftover": Setze "isLeftover": true, "estimatedCost": 0, "ingredients": [] und plane sinnvoll die Reste einer vorherigen Portion ein.
-3. Wenn mode === "cook": Setze "isLeftover": false. Sorge für maximale Vielfalt ohne doppelte Hauptzutaten an aufeinanderfolgenden Tagen und halte das Budget von ${p.budget} Euro ein.
+- Liefere exakt ${activeSlots.length} Einträge in "meals" mit passender "id", "day", "slot".
+- mode === "leftover": "isLeftover": true, "estimatedCost": 0, "ingredients": [], sinnvolle Resteverwertung.
+- mode === "cook": "isLeftover": false, abwechslungsreiche Gerichte innerhalb von ${p.budget}€ gesamt, max. 4-5 Hauptzutaten und 2-3 knappe Zubereitungsschritte pro Rezept.
 
-ANTWORT-SCHEMA (striktes JSON):
-{
-  "meals": [
-    {
-      "id": "Montag-dinner",
-      "day": "Montag",
-      "slot": "Abendessen",
-      "isLeftover": false,
-      "emoji": "🍝",
-      "cuisine": "Italienisch",
-      "title": "Gerichtstitel",
-      "desc": "Kurzbeschreibung",
-      "prepTime": 25,
-      "kcal": 580,
-      "estimatedCost": 6.50,
-      "ingredients": [{ "name": "Zutat", "amount": "250 g", "dept": "Obst & Gemüse" }],
-      "steps": ["Schritt 1", "Schritt 2"]
-    }
-  ]
-}`;
+JSON-SCHEMA:
+{"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLeftover":false,"emoji":"🍝","cuisine":"Italienisch","title":"Titel","desc":"1 kurzer Satz","prepTime":25,"kcal":580,"estimatedCost":6.5,"ingredients":[{"name":"Zutat","amount":"250 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}]}`;
 
-          const { parsed } = await callGeminiJSON(prompt, 30000);
+          const { parsed, model } = await callGeminiJSON(prompt, 60000, (mName, attempt, total) => {
+            loadingSub.textContent = attempt === 1
+              ? `Generiere Rezepte mit ${mName} (kann bei einer ganzen Woche 15–30 Sek. dauern)...`
+              : `${mName} wird als Ausweichmodell genutzt (Versuch ${attempt}/${total})...`;
+          });
+
           if (!parsed || !Array.isArray(parsed.meals)) {
             throw new Error('Unerwartetes Antwortformat von der KI.');
           }
@@ -1252,7 +1262,7 @@ ANTWORT-SCHEMA (striktes JSON):
           });
           saveState();
           showDashboard();
-          showToast('✨ KI-Wochenplan erfolgreich generiert!');
+          showToast(`✨ Wochenplan erfolgreich mit ${model} erstellt!`);
         } catch (err) {
           showToast(`Fehler: ${err.message}`);
         } finally {
@@ -1267,35 +1277,21 @@ ANTWORT-SCHEMA (striktes JSON):
 
         const overlay = document.getElementById('loading-overlay');
         document.getElementById('loading-title').textContent = 'Neues Rezept wird generiert...';
+        document.getElementById('loading-subtitle').textContent = 'Suche passende Alternative...';
         overlay.classList.remove('hidden');
 
         try {
           const p = state.prefs;
           const existingTitles = state.plan.map(m => m.title).join(', ');
-          const prompt = `Generiere genau EIN neues, abwechslungsreiches Rezept als JSON-Objekt für ${meal.day} (${meal.slot}).
-Ernährungsform: ${p.diet}. Allergien meiden: ${p.allergies.join(', ') || 'keine'}. No-Gos meiden: ${p.nogos.join(', ') || 'keine'}.
-Haushalt: ${p.adults} Erwachsene, ${p.children} Kinder. Max. Kochzeit: ${p.maxCookTime} Min.
-Wunsch des Nutzers: ${customWish || 'Etwas völlig anderes als die bisherigen Gerichte der Woche'}.
-Bereits in dieser Woche geplant (NICHT wiederholen): ${existingTitles}.
-Blacklist: ${state.blacklist.join(', ') || 'keine'}.
+          const prompt = `Generiere genau EIN neues Rezept als JSON-Objekt für ${meal.day} (${meal.slot}).
+Ernährung: ${p.diet}. Allergien meiden: ${p.allergies.join(', ') || 'keine'}. No-Gos meiden: ${p.nogos.join(', ') || 'keine'}.
+Haushalt: ${p.adults} Erw., ${p.children} Ki. Max. Kochzeit: ${p.maxCookTime} Min.
+Wunsch: ${customWish || 'Etwas völlig anderes als die bisherigen Gerichte'}.
+Nicht wiederholen: ${existingTitles}. Blacklist: ${state.blacklist.join(', ') || 'keine'}.
+Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":560,"estimatedCost":6.2,"ingredients":[{"name":"Zutat","amount":"200 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}`;
 
-JSON-Format:
-{
-  "emoji": "🍲",
-  "cuisine": "Mediterran",
-  "title": "Neuer Gerichtstitel",
-  "desc": "Kurzbeschreibung",
-  "prepTime": 25,
-  "kcal": 560,
-  "estimatedCost": 6.20,
-  "ingredients": [{ "name": "Zutat", "amount": "200 g", "dept": "Obst & Gemüse" }],
-  "steps": ["Schritt 1", "Schritt 2"]
-}`;
-          const { parsed: newMeal } = await callGeminiJSON(prompt, 20000);
-          Object.assign(meal, {
-            ...newMeal,
-            isLeftover: false
-          });
+          const { parsed: newMeal } = await callGeminiJSON(prompt, 30000);
+          Object.assign(meal, { ...newMeal, isLeftover: false });
           state.mealImages[meal.title] = generateFoodPhotoCanvas(meal);
           saveState();
           updateDashboardBudgetUI();
@@ -1685,11 +1681,13 @@ JSON-Format:
           testBtn.disabled = true;
           testBtn.textContent = '⏳ Prüfe...';
           statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-stone-100 text-stone-700';
-          statusEl.textContent = 'Suche freigeschaltetes Gemini-Modell (max. 15 Sek.)...';
+          statusEl.textContent = 'Prüfe verfügbare Modelle mit automatischem Ausweichen...';
           statusEl.classList.remove('hidden');
 
           try {
-            const { model } = await callGeminiJSON('Antworte nur mit {"ok": true}', 15000);
+            const { model } = await callGeminiJSON('Antworte nur mit {"ok": true}', 20000, (mName, attempt) => {
+              statusEl.textContent = `Teste Modell ${mName} (Versuch ${attempt})...`;
+            });
             statusEl.className = 'text-xs font-semibold p-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200';
             statusEl.textContent = `✓ Verbunden! Aktives Modell: ${model}`;
           } catch (e) {
