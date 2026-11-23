@@ -160,7 +160,7 @@
   <!-- ==================== MAIN CONTENT ==================== -->
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 sm:py-8">
 
-    <!-- ==================== NEUE LANDINGPAGE (START-HUB) ==================== -->
+    <!-- ==================== LANDINGPAGE (START-HUB) ==================== -->
     <section id="landing-view" class="space-y-6 fade-in">
       <div class="bg-white rounded-3xl border border-stone-200/90 p-6 sm:p-8 shadow-sm">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -853,12 +853,12 @@
 
   <script>
     (function () {
-      const APP_VERSION = '2026-11-23-v19';
+      const APP_VERSION = '2026-11-23-v20';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_MEMORY_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v19';
+      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v20';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v19';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v20';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
       (function migrateAndCleanSession() {
@@ -876,7 +876,7 @@
                   if (!mem.blacklist && Array.isArray(old.blacklist)) mem.blacklist = old.blacklist;
                   if (!mem.feedbackHistory && Array.isArray(old.feedbackHistory)) mem.feedbackHistory = old.feedbackHistory;
                   if (!mem.prefs && old.prefs) mem.prefs = old.prefs;
-                  if (!mem.plan && Array.isArray(old.plan) && old.plan.length > 0) mem.savedPlan = old.plan;
+                  if (!mem.savedPlan && Array.isArray(old.plan) && old.plan.length > 0) mem.savedPlan = old.plan;
                 } catch (_) {}
                 localStorage.removeItem(k);
               }
@@ -1035,7 +1035,7 @@
 
       async function resolveAvailableModel(apiKey) {
         const cached = localStorage.getItem(MODEL_CACHE_KEY);
-        if (cached && !/(image|tts|embedding|live|aqa|vision)/i.test(cached)) {
+        if (cached && /^[a-zA-Z0-9._-]+$/.test(cached) && !/(image|tts|embedding|live|aqa|vision)/i.test(cached)) {
           return cached;
         }
 
@@ -1044,15 +1044,26 @@
           {},
           10000
         );
-        const data = await res.json();
+        const rawBody = await res.text();
+        if (rawBody.trim().startsWith('<')) {
+          throw new Error(`API lieferte HTML statt JSON (HTTP ${res.status}) – Prüfe Netzwerk/Adblocker oder API-Key.`);
+        }
+
+        let data;
+        try {
+          data = JSON.parse(rawBody);
+        } catch (_) {
+          throw new Error(`Antwort von ListModels war kein gültiges JSON (HTTP ${res.status}).`);
+        }
+
         if (!res.ok) {
           throw new Error(data?.error?.message || `HTTP ${res.status}`);
         }
 
         const models = (data.models || [])
           .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-          .map(m => m.name.replace(/^models\//, ''))
-          .filter(n => !/(image|tts|embedding|live|aqa|vision)/i.test(n));
+          .map(m => String(m.name || '').replace(/^models\//, '').trim())
+          .filter(n => /^[a-zA-Z0-9._-]+$/.test(n) && !/(image|tts|embedding|live|aqa|vision)/i.test(n));
 
         const picked = models.find(n => n === 'gemini-3.5-flash-lite')
           || models.find(n => n.includes('3.5-flash-lite'))
@@ -1096,7 +1107,6 @@
         try {
           return JSON.parse(candidate);
         } catch (_) {
-          // Repair truncated JSON arrays/objects if output stopped slightly early
           const lastCompleteMeal = candidate.lastIndexOf('}');
           if (lastCompleteMeal > firstBrace && candidate.includes('"meals"')) {
             let repaired = candidate.slice(0, lastCompleteMeal + 1);
@@ -1121,6 +1131,7 @@
         let activeModel = await resolveAvailableModel(apiKey);
 
         const sendRequest = (modelId, withJsonMime) => {
+          const cleanModel = encodeURIComponent(String(modelId || '').replace(/^models\//, '').trim());
           const genCfg = {
             temperature: 0.7,
             maxOutputTokens: 4096
@@ -1129,7 +1140,7 @@
             genCfg.responseMimeType = 'application/json';
           }
           return fetchWithTimeout(
-            `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){modelId}:generateContent?key=${encodeURIComponent(apiKey)}`,
+            `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){cleanModel}:generateContent?key=${encodeURIComponent(apiKey)}`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1154,7 +1165,18 @@
           response = await sendRequest(activeModel, false);
         }
 
-        const data = await response.json();
+        const rawBody = await response.text();
+        if (rawBody.trim().startsWith('<')) {
+          throw new Error(`Gemini-Endpunkt lieferte HTML statt JSON (HTTP ${response.status}).`);
+        }
+
+        let data;
+        try {
+          data = JSON.parse(rawBody);
+        } catch (_) {
+          throw new Error(`API-Antwort konnte nicht als JSON gelesen werden (HTTP ${response.status}).`);
+        }
+
         if (!response.ok) {
           const msg = data?.error?.message || `HTTP ${response.status}`;
           if (response.status === 429 || /quota|rate limit/i.test(msg)) {
@@ -2233,7 +2255,6 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         document.getElementById('header-brand').addEventListener('click', showLanding);
         document.getElementById('btn-go-landing').addEventListener('click', showLanding);
 
-        // Landingpage buttons
         document.getElementById('landing-btn-open-plan').addEventListener('click', () => showDashboard('plan'));
         document.getElementById('landing-btn-open-shopping').addEventListener('click', () => showDashboard('shopping'));
         document.getElementById('landing-btn-start-wizard').addEventListener('click', showWizard);
@@ -2720,7 +2741,6 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         updateApiKeyStatusUI();
         bindAllEvents();
         checkUrlHashForSharedPlan();
-        // Always open on the Startseite / Landingpage so the user has full choice without forced regeneration
         showLanding();
       });
     })();
