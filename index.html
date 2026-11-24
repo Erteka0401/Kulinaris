@@ -621,19 +621,19 @@
   <div id="loading-overlay" class="hidden fixed inset-0 z-50 bg-cream/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
     <div class="w-14 h-14 border-4 border-sage-200 border-t-sage-600 rounded-full animate-spin mb-4"></div>
     <h3 id="loading-title" class="text-xl font-bold text-stone-900">Gemini KI erstellt deinen Wochenplan...</h3>
-    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Wird in 2 kompakten Etappen generiert...</p>
+    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Wird in kompakten Etappen generiert...</p>
   </div>
 
   <div id="toast" class="fixed bottom-5 right-5 z-50 hidden max-w-md px-4 py-3 rounded-2xl bg-stone-900 text-white text-xs sm:text-sm font-medium shadow-xl break-words"></div>
 
   <script>
     (() => {
-      const APP_VERSION = '2026-11-24-v31';
+      const APP_VERSION = '2026-11-25-v32';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_KEY = 'kulinaris_active_plan_v31';
+      const PLAN_KEY = 'kulinaris_active_plan_v32';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v31';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v32';
 
       const API_HOST = 'https://generativelanguage.googleapis.com';
       const API_MODELS_PATH = '/v1beta/models';
@@ -827,11 +827,9 @@
         let model = await resolveAvailableModel(apiKey);
         let currentUrl = '';
 
-        const send = (useJsonMime) => {
+        const send = () => {
           const cleanModel = String(model || '').replace(/^models\//, '').trim() || 'gemini-2.5-flash';
           currentUrl = API_HOST + API_MODELS_PATH + '/' + encodeURIComponent(cleanModel) + ':generateContent?key=' + encodeURIComponent(apiKey);
-          const cfg = { temperature: 0.7, maxOutputTokens: 4096 };
-          if (useJsonMime) cfg.responseMimeType = 'application/json';
           return fetchWithTimeout(
             currentUrl,
             {
@@ -839,19 +837,18 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 contents: [{ parts: [{ text: promptText }] }],
-                generationConfig: cfg
+                generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
               })
             },
             timeoutMs
           );
         };
 
-        let res = await send(true);
-        if (res.status === 400) res = await send(false);
+        let res = await send();
         if (res.status === 404) {
           localStorage.removeItem(MODEL_CACHE_KEY);
           model = await resolveAvailableModel(apiKey);
-          res = await send(false);
+          res = await send();
         }
 
         const raw = await res.text();
@@ -895,8 +892,12 @@
         });
         if (!activeSlots.length) return showToast('Bitte mindestens einen Slot in der Wochen-Matrix aktivieren.');
 
-        const mid = Math.ceil(activeSlots.length / 2);
-        const batches = [activeSlots.slice(0, mid), activeSlots.slice(mid)].filter(h => h.length);
+        const chunkSize = Math.max(1, Math.ceil(activeSlots.length / 3));
+        const batches = [];
+        for (let idx = 0; idx < activeSlots.length; idx += chunkSize) {
+          batches.push(activeSlots.slice(idx, idx + chunkSize));
+        }
+
         const meals = [];
         let usedModel = '';
 
@@ -907,13 +908,14 @@
             $('loading-title').textContent = `Teil ${i + 1} von ${batches.length} wird generiert...`;
             $('loading-subtitle').textContent = `${batch[0].day} bis ${batch[batch.length - 1].day}`;
 
-            const prompt = `Antworte NUR als JSON ohne Markdown. Plane diese ${batch.length} Slots für ${p.adults} Erw., ${p.children} Ki., Budget ${Math.round(p.budget / batches.length)}€.
+            const prompt = `Antworte NUR mit einem kompakten JSON-Objekt ohne Markdown. Plane diese ${batch.length} Slots für ${p.adults} Erw., ${p.children} Ki., Budget ${Math.round(p.budget / batches.length)}€.
 Ernährung: ${p.diet} | Allergien meiden: ${p.allergies.join(',') || 'keine'} | No-Gos meiden: ${p.nogos.join(',') || 'keine'}
 Küchen: ${p.cuisines.join(',') || 'alle'} | Max. Zeit: ${p.maxCookTime} Min. | Ziele: ${p.goals.join(',')} ${p.customGoal || ''}
 Favoriten: ${state.favorites.map(f => f.title).join(',') || 'keine'} | Blacklist: ${state.blacklist.join(',') || 'keine'}
 Lernregeln: ${state.feedbackHistory.join('; ') || 'keine'} | Bereits verplant: ${meals.map(m => m.title).join(', ') || 'nichts'}
+WICHTIG: desc max. 6 Wörter, steps max. 2 kurze Sätze!
 Slots: ${JSON.stringify(batch)}
-Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLeftover":false,"emoji":"🍝","cuisine":"Italienisch","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":550,"estimatedCost":6.5,"ingredients":[{"name":"Zutat","amount":"250 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}]}`;
+Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLeftover":false,"emoji":"🍝","cuisine":"Italienisch","title":"Titel","desc":"Max 6 Wörter","prepTime":25,"kcal":550,"estimatedCost":6.5,"ingredients":[{"name":"Zutat","amount":"250 g","dept":"Gemüse"}],"steps":["Schritt 1.","Schritt 2."]}]}`;
 
             const { parsed, model } = await callGeminiSingleShot(prompt, 45000);
             usedModel = model;
@@ -978,8 +980,8 @@ Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLe
         $('loading-overlay').classList.remove('hidden');
         try {
           const p = state.prefs;
-          const prompt = `Antworte NUR mit JSON ohne Markdown. 1 neues Rezept für ${meal.day} (${meal.slot}), ${p.diet}, Allergien meiden: ${p.allergies.join(',') || 'keine'}, No-Gos meiden: ${p.nogos.join(',') || 'keine'}, Lernregeln: ${state.feedbackHistory.join('; ') || 'keine'}, Wunsch: ${wish || 'Abwechslung'}, Blacklist: ${state.blacklist.join(',') || 'keine'}, nicht wiederholen: ${state.plan.map(x => x.title).join(', ')}.
-Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":550,"estimatedCost":6.2,"ingredients":[{"name":"Zutat","amount":"200 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}`;
+          const prompt = `Antworte NUR mit JSON ohne Markdown. 1 kompaktes Rezept (desc max 6 Wörter, steps max 2 Sätze) für ${meal.day} (${meal.slot}), ${p.diet}, Allergien meiden: ${p.allergies.join(',') || 'keine'}, No-Gos meiden: ${p.nogos.join(',') || 'keine'}, Lernregeln: ${state.feedbackHistory.join('; ') || 'keine'}, Wunsch: ${wish || 'Abwechslung'}, Blacklist: ${state.blacklist.join(',') || 'keine'}, nicht wiederholen: ${state.plan.map(x => x.title).join(', ')}.
+Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Max 6 Wörter","prepTime":25,"kcal":550,"estimatedCost":6.2,"ingredients":[{"name":"Zutat","amount":"200 g","dept":"Gemüse"}],"steps":["Schritt 1.","Schritt 2."]}`;
           const { parsed } = await callGeminiSingleShot(prompt, 30000);
           Object.assign(meal, { ...parsed, isLeftover: false });
           state.mealImages[meal.title] = generateFoodPhotoCanvas(meal);
