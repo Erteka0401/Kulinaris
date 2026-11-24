@@ -623,16 +623,16 @@
     <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Wird in 2 kompakten Etappen generiert...</p>
   </div>
 
-  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden px-4 py-3 rounded-2xl bg-stone-900 text-white text-sm font-medium shadow-xl"></div>
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden max-w-md px-4 py-3 rounded-2xl bg-stone-900 text-white text-xs sm:text-sm font-medium shadow-xl break-words"></div>
 
   <script>
     (() => {
-      const APP_VERSION = '2026-11-24-v26';
+      const APP_VERSION = '2026-11-24-v27';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_KEY = 'kulinaris_active_plan_v26';
+      const PLAN_KEY = 'kulinaris_active_plan_v27';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v26';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v27';
 
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
       const SUPERMARKETS = ['Rewe', 'Edeka', 'Lidl', 'Aldi', 'dm / Bio-Markt', 'Wochenmarkt', 'Penny'];
@@ -696,7 +696,7 @@
         el.textContent = msg;
         el.classList.remove('hidden');
         clearTimeout(el._t);
-        el._t = setTimeout(() => el.classList.add('hidden'), 5500);
+        el._t = setTimeout(() => el.classList.add('hidden'), 9000);
       }
 
       function cleanHtmlErrorText(raw) {
@@ -824,13 +824,15 @@
         }
 
         let model = await resolveAvailableModel(apiKey);
+        let currentUrl = '';
 
         const send = (useJsonMime) => {
           const cleanM = encodeURIComponent(String(model).replace(/^models\//, '').trim());
+          currentUrl = `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){cleanM}:generateContent?key=${encodeURIComponent(apiKey)}`;
           const cfg = { temperature: 0.7, maxOutputTokens: 4096 };
           if (useJsonMime) cfg.responseMimeType = 'application/json';
           return fetchWithTimeout(
-            `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){cleanM}:generateContent?key=${encodeURIComponent(apiKey)}`,
+            currentUrl,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -853,13 +855,13 @@
 
         const raw = await res.text();
         let data;
-        try { data = JSON.parse(raw); } catch (_) { throw new Error(`HTTP ${res.status}: ${cleanHtmlErrorText(raw)}`); }
+        try { data = JSON.parse(raw); } catch (_) { throw new Error(`HTTP ${res.status} (${currentUrl.split('?')[0]}): ${cleanHtmlErrorText(raw)}`); }
         if (!res.ok) {
           const msg = data?.error?.message || `HTTP ${res.status}`;
           if (res.status === 429 || /quota|rate limit/i.test(msg)) {
-            throw new Error('Free-Tier Ratenlimit erreicht (bitte kurz warten).');
+            throw new Error(`Free-Tier Ratenlimit (${currentUrl.split('?')[0]})`);
           }
-          throw new Error(msg);
+          throw new Error(`HTTP ${res.status} (${currentUrl.split('?')[0]}): ${msg}`);
         }
 
         const parts = data?.candidates?.[0]?.content?.parts || [];
