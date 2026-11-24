@@ -549,7 +549,7 @@
         <button type="button" id="btn-close-apikey" class="w-8 h-8 rounded-full bg-stone-100 font-bold">✕</button>
       </div>
       <p class="text-xs sm:text-sm text-stone-600">Wird lokal gespeichert. Wählt automatisch ein verfügbares Gemini-Modell (Test = <strong>0 Tokens</strong>).</p>
-      <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-stone-300" />
+      <input type="password" id="input-api-key" placeholder="AIzaSy... oder AQ...." class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-stone-300" />
       <div id="apikey-test-status" class="hidden text-xs font-medium p-3 rounded-xl"></div>
       <div class="flex flex-wrap gap-2">
         <button type="button" id="btn-save-apikey" class="flex-1 py-2.5 px-4 rounded-xl bg-sage-500 text-white text-sm font-semibold hover:bg-sage-600">Speichern</button>
@@ -627,12 +627,15 @@
 
   <script>
     (() => {
-      const APP_VERSION = '2026-11-24-v29';
+      const APP_VERSION = '2026-11-24-v30';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_KEY = 'kulinaris_active_plan_v29';
+      const PLAN_KEY = 'kulinaris_active_plan_v30';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v29';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v30';
+
+      const API_HOST = 'https://generativelanguage.googleapis.com';
+      const API_MODELS_PATH = '/v1beta/models';
 
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
       const SUPERMARKETS = ['Rewe', 'Edeka', 'Lidl', 'Aldi', 'dm / Bio-Markt', 'Wochenmarkt', 'Penny'];
@@ -770,11 +773,8 @@
           return cached;
         }
 
-        const res = await fetchWithTimeout(
-          'https://' + 'generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey),
-          {},
-          10000
-        );
+        const listUrl = API_HOST + API_MODELS_PATH + '?key=' + encodeURIComponent(apiKey);
+        const res = await fetchWithTimeout(listUrl, {}, 10000);
         const raw = await res.text();
         let data;
         try { data = JSON.parse(raw); } catch (_) { throw new Error(`HTTP ${res.status}: ${cleanHtmlErrorText(raw)}`); }
@@ -828,12 +828,7 @@
 
         const send = (useJsonMime) => {
           const cleanModel = String(model || '').replace(/^models\//, '').trim() || 'gemini-2.5-flash';
-          currentUrl =
-            'https://' +
-            '[generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/)' +
-            encodeURIComponent(cleanModel) +
-            ':generateContent?key=' +
-            encodeURIComponent(apiKey);
+          currentUrl = API_HOST + API_MODELS_PATH + '/' + encodeURIComponent(cleanModel) + ':generateContent?key=' + encodeURIComponent(apiKey);
           const cfg = { temperature: 0.7, maxOutputTokens: 4096 };
           if (useJsonMime) cfg.responseMimeType = 'application/json';
           return fetchWithTimeout(
