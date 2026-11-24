@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Kulinaris" />
+  <link rel="manifest" href="./manifest.json" />
   <title>Kulinaris – KI-Wochenplaner & Einkaufsliste</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -627,12 +628,12 @@
 
   <script>
     (() => {
-      const APP_VERSION = '2026-11-24-v30';
+      const APP_VERSION = '2026-11-24-v31';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_KEY = 'kulinaris_active_plan_v30';
+      const PLAN_KEY = 'kulinaris_active_plan_v31';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v30';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v31';
 
       const API_HOST = 'https://generativelanguage.googleapis.com';
       const API_MODELS_PATH = '/v1beta/models';
@@ -1525,10 +1526,9 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
       }
 
       document.addEventListener('DOMContentLoaded', () => {
-        const iconUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#4A7C59"/><text x="256" y="345" font-family="Georgia,serif" font-size="300" font-weight="bold" fill="#FAF8F5" text-anchor="middle">K</text></svg>');
-        const l = document.createElement('link'); l.rel = 'manifest';
-        l.href = URL.createObjectURL(new Blob([JSON.stringify({ name: 'Kulinaris', short_name: 'Kulinaris', start_url: './', display: 'standalone', background_color: '#FAF8F5', theme_color: '#4A7C59', icons: [{ src: iconUrl, sizes: '512x512', type: 'image/svg+xml' }] })], { type: 'application/manifest+json' }));
-        document.head.appendChild(l);
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
 
         loadState();
         updateApiKeyStatusUI();
