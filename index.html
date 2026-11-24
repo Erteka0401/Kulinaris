@@ -853,12 +853,12 @@
 
   <script>
     (function () {
-      const APP_VERSION = '2026-11-23-v21';
+      const APP_VERSION = '2026-11-24-v22';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_MEMORY_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v21';
+      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v22';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v21';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v22';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
       (function migrateAndCleanSession() {
@@ -958,6 +958,22 @@
       let pendingSharedPayload = null;
       let deferredInstallPrompt = null;
 
+      function cleanHtmlErrorText(raw) {
+        if (!raw || typeof raw !== 'string') return '';
+        const titleMatch = raw.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        const h1Match = raw.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+        const base = (titleMatch && titleMatch[1]) || (h1Match && h1Match[1]) || raw;
+        return base
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/&amp;/gi, '&')
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 90);
+      }
+
       function initPWA() {
         const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#4A7C59"/><text x="256" y="345" font-family="Georgia,serif" font-size="300" font-weight="bold" fill="#FAF8F5" text-anchor="middle">K</text></svg>`;
         const iconUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(iconSvg);
@@ -1046,16 +1062,16 @@
         );
         const rawBody = await res.text();
         if (rawBody.trim().startsWith('<')) {
-          const snippet = rawBody.trim().slice(0, 80).replace(/\s+/g, ' ');
-          throw new Error(`HTTP ${res.status} HTML bei ListModels: "${snippet}"`);
+          const cleanMsg = cleanHtmlErrorText(rawBody);
+          throw new Error(`HTTP ${res.status} bei ListModels: ${cleanMsg || 'Antwort nicht als JSON lesbar'}`);
         }
 
         let data;
         try {
           data = JSON.parse(rawBody);
         } catch (_) {
-          const snippet = rawBody.trim().slice(0, 80).replace(/\s+/g, ' ');
-          throw new Error(`HTTP ${res.status} kein JSON bei ListModels: "${snippet}"`);
+          const cleanMsg = cleanHtmlErrorText(rawBody);
+          throw new Error(`HTTP ${res.status} bei ListModels: ${cleanMsg || 'Antwort nicht als JSON lesbar'}`);
         }
 
         if (!res.ok) {
@@ -1097,7 +1113,7 @@
         const lastBrace = cleaned.lastIndexOf('}');
 
         if (firstBrace === -1) {
-          throw new Error(`Kein JSON-Start gefunden. Antwort: ${cleaned.slice(0, 120)}`);
+          throw new Error(`Kein JSON-Start gefunden: ${cleanHtmlErrorText(cleaned).slice(0, 90)}`);
         }
 
         let candidate = lastBrace > firstBrace
@@ -1169,16 +1185,16 @@
 
         const rawBody = await response.text();
         if (rawBody.trim().startsWith('<')) {
-          const snippet = rawBody.trim().slice(0, 90).replace(/\s+/g, ' ');
-          throw new Error(`HTTP ${response.status} HTML bei ${activeModel}: "${snippet}"`);
+          const cleanMsg = cleanHtmlErrorText(rawBody);
+          throw new Error(`HTTP ${response.status} bei ${activeModel}: ${cleanMsg || 'Antwort nicht als JSON lesbar'}`);
         }
 
         let data;
         try {
           data = JSON.parse(rawBody);
         } catch (_) {
-          const snippet = rawBody.trim().slice(0, 90).replace(/\s+/g, ' ');
-          throw new Error(`HTTP ${response.status} kein JSON bei ${activeModel}: "${snippet}"`);
+          const cleanMsg = cleanHtmlErrorText(rawBody);
+          throw new Error(`HTTP ${response.status} bei ${activeModel}: ${cleanMsg || 'Antwort nicht als JSON lesbar'}`);
         }
 
         if (!response.ok) {
