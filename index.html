@@ -627,12 +627,12 @@
 
   <script>
     (() => {
-      const APP_VERSION = '2026-11-24-v27';
+      const APP_VERSION = '2026-11-24-v28';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_KEY = 'kulinaris_active_plan_v27';
+      const PLAN_KEY = 'kulinaris_active_plan_v28';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v27';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v28';
 
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
       const SUPERMARKETS = ['Rewe', 'Edeka', 'Lidl', 'Aldi', 'dm / Bio-Markt', 'Wochenmarkt', 'Penny'];
@@ -771,7 +771,7 @@
         }
 
         const res = await fetchWithTimeout(
-          `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
+          'https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey),
           {},
           10000
         );
@@ -788,9 +788,9 @@
         const picked =
           models.find(n => n.includes('flash-lite')) ||
           models.find(n => n.includes('flash')) ||
-          models[0];
+          models[0] ||
+          'gemini-2.5-flash';
 
-        if (!picked) throw new Error('Kein passendes Gemini-Textmodell gefunden.');
         localStorage.setItem(MODEL_CACHE_KEY, picked);
         return picked;
       }
@@ -827,8 +827,8 @@
         let currentUrl = '';
 
         const send = (useJsonMime) => {
-          const cleanM = encodeURIComponent(String(model).replace(/^models\//, '').trim());
-          currentUrl = `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){cleanM}:generateContent?key=${encodeURIComponent(apiKey)}`;
+          const safeModel = String(model || '').replace(/^models\//, '').trim() || 'gemini-2.5-flash';
+          currentUrl = '[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/)' + encodeURIComponent(safeModel) + ':generateContent?key=' + encodeURIComponent(apiKey);
           const cfg = { temperature: 0.7, maxOutputTokens: 4096 };
           if (useJsonMime) cfg.responseMimeType = 'application/json';
           return fetchWithTimeout(
