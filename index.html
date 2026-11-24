@@ -853,12 +853,12 @@
 
   <script>
     (function () {
-      const APP_VERSION = '2026-11-23-v20';
+      const APP_VERSION = '2026-11-23-v21';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_MEMORY_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v20';
+      const PLAN_SESSION_KEY = 'kulinaris_active_plan_v21';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v20';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v21';
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
       (function migrateAndCleanSession() {
@@ -1046,14 +1046,16 @@
         );
         const rawBody = await res.text();
         if (rawBody.trim().startsWith('<')) {
-          throw new Error(`API lieferte HTML statt JSON (HTTP ${res.status}) – Prüfe Netzwerk/Adblocker oder API-Key.`);
+          const snippet = rawBody.trim().slice(0, 80).replace(/\s+/g, ' ');
+          throw new Error(`HTTP ${res.status} HTML bei ListModels: "${snippet}"`);
         }
 
         let data;
         try {
           data = JSON.parse(rawBody);
         } catch (_) {
-          throw new Error(`Antwort von ListModels war kein gültiges JSON (HTTP ${res.status}).`);
+          const snippet = rawBody.trim().slice(0, 80).replace(/\s+/g, ' ');
+          throw new Error(`HTTP ${res.status} kein JSON bei ListModels: "${snippet}"`);
         }
 
         if (!res.ok) {
@@ -1167,14 +1169,16 @@
 
         const rawBody = await response.text();
         if (rawBody.trim().startsWith('<')) {
-          throw new Error(`Gemini-Endpunkt lieferte HTML statt JSON (HTTP ${response.status}).`);
+          const snippet = rawBody.trim().slice(0, 90).replace(/\s+/g, ' ');
+          throw new Error(`HTTP ${response.status} HTML bei ${activeModel}: "${snippet}"`);
         }
 
         let data;
         try {
           data = JSON.parse(rawBody);
         } catch (_) {
-          throw new Error(`API-Antwort konnte nicht als JSON gelesen werden (HTTP ${response.status}).`);
+          const snippet = rawBody.trim().slice(0, 90).replace(/\s+/g, ' ');
+          throw new Error(`HTTP ${response.status} kein JSON bei ${activeModel}: "${snippet}"`);
         }
 
         if (!response.ok) {
