@@ -548,7 +548,7 @@
         <h2 class="text-xl font-bold">🔑 Google Gemini API-Key</h2>
         <button type="button" id="btn-close-apikey" class="w-8 h-8 rounded-full bg-stone-100 font-bold">✕</button>
       </div>
-      <p class="text-xs sm:text-sm text-stone-600">Wird lokal gespeichert. Wählt automatisch ein verfügbares Gemini-Modell (Test = <strong>0 Tokens</strong>).</p>
+      <p class="text-xs sm:text-sm text-stone-600">Wird lokal gespeichert. Wählt automatisch ein funktionierendes Gemini-Modell (Test = <strong>0 Tokens</strong>).</p>
       <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-stone-300" />
       <div id="apikey-test-status" class="hidden text-xs font-medium p-3 rounded-xl"></div>
       <div class="flex flex-wrap gap-2">
@@ -627,12 +627,12 @@
 
   <script>
     (() => {
-      const APP_VERSION = '2026-11-24-v24';
+      const APP_VERSION = '2026-11-24-v25';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_KEY = 'kulinaris_active_plan_v24';
+      const PLAN_KEY = 'kulinaris_active_plan_v25';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v24';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v25';
 
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
       const SUPERMARKETS = ['Rewe', 'Edeka', 'Lidl', 'Aldi', 'dm / Bio-Markt', 'Wochenmarkt', 'Penny'];
@@ -686,6 +686,7 @@
       let activeModalMealId = null;
       let pendingSharedPayload = null;
       let deferredInstallPrompt = null;
+      let cachedCandidateModels = [];
 
       const $ = (id) => document.getElementById(id);
       const formatEuro = (n) => Number(n || 0).toFixed(2).replace('.', ',') + ' €';
@@ -748,6 +749,7 @@
       function setApiKey(key) {
         localStorage.setItem(API_KEY_STORAGE, key.trim());
         localStorage.removeItem(MODEL_CACHE_KEY);
+        cachedCandidateModels = [];
         updateApiKeyStatusUI();
       }
       function updateApiKeyStatusUI() {
@@ -764,25 +766,52 @@
         finally { clearTimeout(t); }
       }
 
-      async function resolveAvailableModel(apiKey) {
-        const cached = localStorage.getItem(MODEL_CACHE_KEY);
-        if (cached && /^[a-zA-Z0-9._-]+$/.test(cached) && !/(image|tts|embedding|live|aqa|vision)/i.test(cached)) return cached;
+      function rankGeminiModels(modelNames) {
+        const isValid = (n) => /^[a-zA-Z0-9._-]+$/.test(n) && !/(image|tts|embedding|live|aqa|vision|robotics|computer-use|deep-research)/i.test(n);
+        const filtered = Array.from(new Set(modelNames.filter(isValid)));
+        const score = (n) => {
+          let s = 0;
+          if (n.includes('flash')) s += 40;
+          if (n.includes('flash-lite')) s += 20;
+          if (/^gemini-3\./.test(n)) s += 30;
+          else if (/^gemini-2\.5/.test(n)) s += 25;
+          else if (/^gemini-2\.0/.test(n)) s += 15;
+          if (/-latest$/.test(n)) s -= 25;
+          if (/exp|preview/.test(n)) s -= 10;
+          return s;
+        };
+        return filtered.sort((a, b) => score(b) - score(a));
+      }
 
-        const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`, {}, 10000);
+      async function getCandidateModels(apiKey) {
+        if (cachedCandidateModels.length) return cachedCandidateModels;
+
+        const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`, {}, 12000);
         const raw = await res.text();
         let data;
         try { data = JSON.parse(raw); } catch (_) { throw new Error(`HTTP ${res.status}: ${cleanHtmlErrorText(raw)}`); }
         if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
 
-        const models = (data.models || [])
+        const rawNames = (data.models || [])
           .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
-          .map(m => String(m.name || '').replace(/^models\//, '').trim())
-          .filter(n => /^[a-zA-Z0-9._-]+$/.test(n) && !/(image|tts|embedding|live|aqa|vision)/i.test(n));
+          .map(m => String(m.name || '').replace(/^models\//, '').trim());
 
-        const picked = models.find(n => n.includes('flash-lite')) || models.find(n => n.includes('flash')) || models[0];
-        if (!picked) throw new Error('Kein passendes Gemini-Textmodell gefunden.');
-        localStorage.setItem(MODEL_CACHE_KEY, picked);
-        return picked;
+        const ranked = rankGeminiModels(rawNames);
+        if (!ranked.length) throw new Error('Kein passendes Gemini-Textmodell gefunden.');
+
+        const cached = localStorage.getItem(MODEL_CACHE_KEY);
+        if (cached && ranked.includes(cached) && !/-latest$/.test(cached)) {
+          cachedCandidateModels = [cached, ...ranked.filter(m => m !== cached)];
+        } else {
+          cachedCandidateModels = ranked;
+        }
+        return cachedCandidateModels;
+      }
+
+      async function resolveAvailableModel(apiKey) {
+        const list = await getCandidateModels(apiKey);
+        localStorage.setItem(MODEL_CACHE_KEY, list[0]);
+        return list[0];
       }
 
       function extractJsonObject(rawText) {
@@ -796,7 +825,7 @@
           const lastObj = candidate.lastIndexOf('}');
           if (lastObj > start && candidate.includes('"meals"')) {
             let rep = candidate.slice(0, lastObj + 1);
-            const ob = (rep.match(/\[/g) || []).length - (rep.match(/\]/g) || []).length;
+            const ob = (rep.match(/\[/g) \vert{}\vert{} []).length - (rep.match(/\]/g) || []).length;
             const oc = (rep.match(/\{/g) || []).length - (rep.match(/\}/g) || []).length;
             rep += ']'.repeat(Math.max(0, ob)) + '}'.repeat(Math.max(0, oc));
             return JSON.parse(rep.replace(/,\s*([}\]])/g, '$1'));
@@ -807,36 +836,65 @@
 
       async function callGeminiSingleShot(promptText, timeoutMs = 45000) {
         const apiKey = getApiKey();
-        if (!apiKey) { $('input-api-key').value = ''; $('apikey-modal').classList.remove('hidden'); throw new Error('Bitte zuerst den Gemini API-Key hinterlegen.'); }
-        let model = await resolveAvailableModel(apiKey);
-
-        const run = async (m, jsonMime) => {
-          const cleanM = encodeURIComponent(String(m).replace(/^models\//, '').trim());
-          const cfg = { temperature: 0.7, maxOutputTokens: 4096 };
-          if (jsonMime) cfg.responseMimeType = 'application/json';
-          return fetchWithTimeout(
-            `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){cleanM}:generateContent?key=${encodeURIComponent(apiKey)}`,
-            { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], generationConfig: cfg }) },
-            timeoutMs
-          );
-        };
-
-        let res = await run(model, true);
-        if (res.status === 400) res = await run(model, false);
-        if (res.status === 404) { localStorage.removeItem(MODEL_CACHE_KEY); model = await resolveAvailableModel(apiKey); res = await run(model, false); }
-
-        const raw = await res.text();
-        let data;
-        try { data = JSON.parse(raw); } catch (_) { throw new Error(`HTTP ${res.status}: ${cleanHtmlErrorText(raw)}`); }
-        if (!res.ok) {
-          const msg = data?.error?.message || `HTTP ${res.status}`;
-          if (res.status === 429 || /quota|rate limit/i.test(msg)) throw new Error('Free-Tier Ratenlimit erreicht (bitte kurz warten).');
-          throw new Error(msg);
+        if (!apiKey) {
+          $('input-api-key').value = '';$('apikey-modal').classList.remove('hidden');
+          throw new Error('Bitte zuerst den Gemini API-Key hinterlegen.');
         }
 
-        const parts = data?.candidates?.[0]?.content?.parts || [];
-        const text = (parts.find(p => typeof p.text === 'string' && !p.thought) || parts.find(p => typeof p.text === 'string'))?.text || '';
-        return { parsed: extractJsonObject(text), model };
+        const candidates = (await getCandidateModels(apiKey)).slice(0, 4);
+        let lastError = null;
+
+        for (const model of candidates) {
+          const cleanM = encodeURIComponent(model);
+          const url = `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){cleanM}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+          const send = (useJsonMime) => {
+            const cfg = { temperature: 0.7, maxOutputTokens: 4096 };
+            if (useJsonMime) cfg.responseMimeType = 'application/json';
+            return fetchWithTimeout(
+              url,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], generationConfig: cfg })
+              },
+              timeoutMs
+            );
+          };
+
+          try {
+            let res = await send(true);
+            if (res.status === 400) res = await send(false);
+
+            const raw = await res.text();
+            let data;
+            try { data = JSON.parse(raw); } catch (_) { throw new Error(`HTTP ${res.status}: ${cleanHtmlErrorText(raw)}`); }
+
+            if (!res.ok) {
+              const msg = data?.error?.message || `HTTP ${res.status}`;
+              if (res.status === 429 || /quota|rate limit/i.test(msg)) {
+                lastError = new Error('Free-Tier Ratenlimit erreicht (bitte kurz warten).');
+                continue;
+              }
+              lastError = new Error(`${model}: ${msg}`);
+              continue;
+            }
+
+            const parts = data?.candidates?.[0]?.content?.parts || [];
+            const text = (parts.find(p => typeof p.text === 'string' && !p.thought) || parts.find(p => typeof p.text === 'string'))?.text || '';
+            const parsed = extractJsonObject(text);
+
+            localStorage.setItem(MODEL_CACHE_KEY, model);
+            cachedCandidateModels = [model, ...cachedCandidateModels.filter(m => m !== model)];
+            return { parsed, model };
+          } catch (err) {
+            lastError = err;
+          }
+        }
+
+        localStorage.removeItem(MODEL_CACHE_KEY);
+        cachedCandidateModels = [];
+        throw lastError || new Error('Kein Gemini-Modell konnte den Plan generieren.');
       }
 
       function generateFoodPhotoCanvas(meal) {
@@ -1068,21 +1126,18 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         p.maxCookTime = Math.max(15, Math.min(90, Number(p.maxCookTime) || 35));
 
         $('slider-budget').value = p.budget;
-        updateSliderTrack($('slider-budget'));
-        $('display-budget').textContent = p.budget;
+        updateSliderTrack($('slider-budget'));$('display-budget').textContent = p.budget;
 
         const factor = Math.max(0.6, p.adults + p.children * 0.6);
         const perDay = p.budget / (factor * 7);
-        $('display-budget-per-person').textContent = perDay.toFixed(2).replace('.', ',');
-        $('budget-category-badge').textContent = perDay < 4.5 ? 'Sparsam & Clever' : perDay <= 8.5 ? 'Ausgewogen & Alltagstauglich' : 'Komfort & Bio';
+        $('display-budget-per-person').textContent = perDay.toFixed(2).replace('.', ',');$('budget-category-badge').textContent = perDay < 4.5 ? 'Sparsam & Clever' : perDay <= 8.5 ? 'Ausgewogen & Alltagstauglich' : 'Komfort & Bio';
 
         $('display-adults').textContent = p.adults;
         $('display-children').textContent = p.children;
         $('display-trips').textContent = `${p.shoppingTrips}×`;
 
         $('slider-cooktime').value = p.maxCookTime;
-        updateSliderTrack($('slider-cooktime'));
-        $('display-cooktime').textContent = p.maxCookTime;
+        updateSliderTrack($('slider-cooktime'));$('display-cooktime').textContent = p.maxCookTime;
         $('display-cooktime-label').textContent = p.maxCookTime <= 20 ? 'Blitzküche' : p.maxCookTime <= 45 ? 'Feierabendküche' : 'Ausgiebig';
 
         let cook = 0, left = 0;
@@ -1136,431 +1191,4 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
           $('skill-options').appendChild(b);
         });
 
-        renderChips('equipment-chips', EQUIPMENT, state.prefs.equipment, v => toggleArr(state.prefs.equipment, v));
-
-        $('leftover-options').innerHTML = '';
-        LEFTOVER_MODES.forEach(m => {
-          const on = state.prefs.leftoverMode === m.id;
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = `p-3.5 rounded-2xl border text-left ${on ? 'bg-sage-500 text-white border-sage-500' : 'bg-cream text-stone-800 border-stone-200'}`;
-          b.innerHTML = `<div class="text-xs sm:text-sm font-bold">${m.title}</div><div class="text-[11px] ${on ? 'text-sage-100' : 'text-stone-500'} mt-0.5">${m.desc}</div>`;
-          b.onclick = () => { state.prefs.leftoverMode = m.id; saveState(); renderWizardControls(); refreshWizardNumbers(); };
-          $('leftover-options').appendChild(b);
-        });
-
-        const modeUI = {
-          cook: { label: '🍳 Frisch kochen', cls: 'bg-sage-500 text-white border-sage-500' },
-          leftover: { label: '🥡 Reste / Fix', cls: 'bg-amber-100 text-amber-900 border-amber-300' },
-          off: { label: '➖ Frei / Auswärts', cls: 'bg-white text-stone-400 border-stone-200' }
-        };
-        const nextMode = { cook: 'leftover', leftover: 'off', off: 'cook' };
-        const tbody = $('schedule-matrix-body');
-        tbody.innerHTML = '';
-        state.prefs.schedule.forEach((row, idx) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td class="py-2 pr-2 font-bold text-stone-800">${row.day}</td>` +
-            ['lunch', 'dinner'].map(t => `<td class="py-1.5 px-1.5 text-center"><button type="button" data-slot="${idx}:${t}" class="w-full py-1.5 px-2 rounded-xl border text-xs font-semibold ${modeUI[row[t]].cls}">${modeUI[row[t]].label}</button></td>`).join('');
-          tbody.appendChild(tr);
-        });
-        tbody.querySelectorAll('[data-slot]').forEach(btn => {
-          btn.onclick = () => {
-            const [idx, t] = btn.dataset.slot.split(':');
-            state.prefs.schedule[Number(idx)][t] = nextMode[state.prefs.schedule[Number(idx)][t]];
-            saveState(); renderWizardControls(); refreshWizardNumbers();
-          };
-        });
-
-        renderChips('goal-chips', GOALS, state.prefs.goals, v => toggleArr(state.prefs.goals, v));
-        $('input-health-notes').value = state.prefs.healthNotes || '';
-        $('input-custom-goal').value = state.prefs.customGoal || '';
-      }
-
-      function goToStep(step) {
-        state.currentStep = Math.max(1, Math.min(5, step));
-        saveState();
-        document.querySelectorAll('.wizard-step').forEach((el, i) => el.classList.toggle('hidden', i + 1 !== state.currentStep));
-        const labels = ['Budget, Haushalt & Supermärkte', 'Ernährungsform & Allergien', 'Abneigungen & Lieblingsküchen', 'Kochzeit, Ausstattung & Reste', 'Koch-Tage, Mahlzeiten & Ziele'];
-        $('wizard-step-label').textContent = `Schritt ${state.currentStep} von 5: ${labels[state.currentStep - 1]}`;
-        $('wizard-step-percent').textContent = `${state.currentStep * 20} %`;
-        $('wizard-progress-bar').style.width = `${state.currentStep * 20}%`;
-        document.querySelectorAll('.step-pill').forEach(p => {
-          const s = Number(p.dataset.gotoStep);
-          p.className = `step-pill py-2 px-2 rounded-xl text-xs font-semibold truncate ${s === state.currentStep ? 'bg-sage-500 text-white' : s < state.currentStep ? 'bg-sage-100 text-sage-700' : 'bg-stone-200 text-stone-600'}`;
-        });
-        $('btn-prev-step').classList.toggle('hidden', state.currentStep === 1);
-        $('btn-next-step').classList.toggle('hidden', state.currentStep === 5);
-        $('btn-generate-plan').classList.toggle('hidden', state.currentStep !== 5);
-      }
-
-      function updateCounts() {
-        $('landing-meal-count').textContent = state.plan?.length || 0;
-        $('landing-lib-count').textContent = state.recipeLibrary.length;
-        $('landing-fav-count').textContent = state.favorites.length;
-        $('landing-ban-count').textContent = state.blacklist.length;
-        $('landing-rules-count').textContent = state.feedbackHistory.length;
-        $('lib-count-badge').textContent = state.recipeLibrary.length;
-        $('fav-count-badge').textContent = state.favorites.length;
-        $('landing-plan-status-text').textContent = state.plan?.length
-          ? `✓ Gespeicherter Wochenplan vorhanden (${state.plan.length} Mahlzeiten · Budget ${formatEuro(state.prefs.budget)}) – direkt öffenbar.`
-          : 'Noch kein Wochenplan gespeichert – Bibliothek nutzen oder neu planen.';
-      }
-
-      function renderDashboardData() {
-        const spent = (state.plan || []).reduce((s, m) => s + (m.isLeftover ? 0 : parsePrice(m.estimatedCost)), 0);
-        const budget = Number(state.prefs.budget) || 75;
-        $('dash-spent').textContent = formatEuro(spent);
-        $('dash-budget').textContent = formatEuro(budget);
-        $('dash-budget-bar').style.width = `${Math.min(100, Math.round((spent / budget) * 100))}%`;
-        $('dash-budget-bar').className = `h-full transition-all duration-300 rounded-full ${spent <= budget ? 'bg-sage-500' : 'bg-terracotta-500'}`;
-        $('dash-budget-status').className = `text-xs font-semibold px-3 py-1 rounded-full ${spent <= budget ? 'bg-sage-100 text-sage-700' : 'bg-terracotta-100 text-terracotta-600'}`;
-        $('dash-budget-status').textContent = spent <= budget ? `Im Budget (${formatEuro(budget - spent)} übrig)` : `${formatEuro(spent - budget)} über Budget`;
-
-        // Plan grid
-        const grid = $('meal-plan-container');
-        grid.innerHTML = '';
-        if (!state.plan?.length) {
-          grid.innerHTML = `<div class="col-span-full bg-white rounded-3xl border border-stone-200 p-7 text-center space-y-3"><p class="font-bold">Noch kein aktiver Wochenplan</p><div class="flex justify-center gap-2"><button type="button" id="empty-lib" class="px-4 py-2 rounded-xl border text-xs font-semibold">📚 Aus Bibliothek mischen</button><button type="button" id="empty-gen" class="px-4 py-2 rounded-xl bg-sage-500 text-white text-xs font-semibold">✨ Online erstellen</button></div></div>`;
-          $('empty-lib').onclick = generateMealPlanFromLibrary;
-          $('empty-gen').onclick = generateMealPlanOnline;
-        } else {
-          state.plan.forEach(meal => {
-            const isFav = state.favorites.some(f => f.title === meal.title);
-            const inLib = state.recipeLibrary.some(r => r.title.toLowerCase() === (meal.title || '').toLowerCase());
-            const img = state.mealImages[meal.title];
-            const card = document.createElement('div');
-            card.className = `bg-white rounded-3xl border ${meal.isLeftover ? 'border-amber-200 bg-amber-50/30' : 'border-stone-200/90'} p-4 flex gap-4 hover:shadow-md transition`;
-            card.innerHTML = `
-              <div class="w-20 h-20 rounded-2xl bg-sage-50 border border-stone-200 shrink-0 overflow-hidden flex items-center justify-center">
-                ${img && !meal.isLeftover ? `<img src="${img}" alt="${meal.title}" class="w-full h-full object-cover"/>` : `<span class="text-2xl">${meal.isLeftover ? '🥡' : (meal.emoji || '🍽️')}</span>`}
-              </div>
-              <div class="flex-1 min-w-0 flex flex-col justify-between">
-                <div>
-                  <div class="flex items-center justify-between gap-2 text-[11px] font-semibold">
-                    <span class="${meal.isLeftover ? 'text-amber-800 bg-amber-100' : 'text-sage-700 bg-sage-100'} px-2.5 py-0.5 rounded-full">${meal.day} · ${meal.slot}</span>
-                    <span class="text-stone-500 tabular-nums">${meal.isLeftover ? '0,00 €' : formatEuro(meal.estimatedCost)} · ${meal.prepTime} Min.</span>
-                  </div>
-                  <h3 class="font-bold text-stone-900 text-sm sm:text-base mt-1.5 line-clamp-1">${meal.title}</h3>
-                  <p class="text-xs text-stone-500 line-clamp-2 mt-0.5">${meal.desc}</p>
-                </div>
-                <div class="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-stone-100">
-                  <button type="button" data-open="${meal.id}" class="text-xs font-bold text-sage-700 hover:underline">Rezept & Details →</button>
-                  <div class="flex items-center gap-1">
-                    ${!meal.isLeftover ? `<button type="button" data-lib="${meal.id}" class="p-1.5 rounded-xl hover:bg-sage-50 text-xs">${inLib ? '📗' : '📚'}</button>` : ''}
-                    <button type="button" data-fav="${meal.id}" class="p-1.5 rounded-xl hover:bg-rose-50 text-xs">${isFav ? '❤️' : '🤍'}</button>
-                    <button type="button" data-left="${meal.id}" class="p-1.5 rounded-xl hover:bg-amber-50 text-xs">🥡</button>
-                    <button type="button" data-swap="${meal.id}" class="p-1.5 rounded-xl hover:bg-sage-50 text-xs">🎲</button>
-                  </div>
-                </div>
-              </div>`;
-            grid.appendChild(card);
-          });
-          grid.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openRecipeModal(b.dataset.open));
-          grid.querySelectorAll('[data-lib]').forEach(b => b.onclick = () => saveMealToLibrary(b.dataset.lib));
-          grid.querySelectorAll('[data-fav]').forEach(b => b.onclick = () => toggleFavorite(b.dataset.fav));
-          grid.querySelectorAll('[data-left]').forEach(b => b.onclick = () => pushLeftover(b.dataset.left));
-          grid.querySelectorAll('[data-swap]').forEach(b => b.onclick = () => swapSingleMeal(b.dataset.swap));
-        }
-
-        // Shopping (zusammengefasst)
-        $('shopping-markets-tags').innerHTML = (state.prefs.supermarkets || []).map(m => `<span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-lg bg-sage-100 text-sage-700">🏪 ${m}</span>`).join('');
-        const rawIngs = [];
-        (state.plan || []).forEach(m => { if (!m.isLeftover) (m.ingredients || []).forEach(i => rawIngs.push(i)); });
-        const mergedIngs = consolidateIngredients(rawIngs);
-        const grouped = {};
-        mergedIngs.forEach(i => { const d = i.dept || 'Sonstiges'; (grouped[d] = grouped[d] || []).push(i); });
-        $('shopping-count-badge').textContent = mergedIngs.length;
-        const shopBox = $('shopping-list-container');
-        shopBox.innerHTML = mergedIngs.length ? '' : '<p class="text-sm text-stone-500">Keine Einkaufsartikel vorhanden.</p>';
-        Object.entries(grouped).forEach(([dept, items]) => {
-          const sec = document.createElement('div');
-          sec.className = 'space-y-2';
-          sec.innerHTML = `<h3 class="text-xs font-bold uppercase tracking-wider text-sage-700 border-b border-stone-200 pb-1.5">${dept}</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>`;
-          const list = sec.lastElementChild;
-          items.forEach((item, idx) => {
-            const key = `${dept}-${item.name.toLowerCase()}-${idx}`, chk = !!state.checkedShopping[key];
-            const lbl = document.createElement('label');
-            lbl.className = `flex items-center justify-between p-3 rounded-2xl border cursor-pointer ${chk ? 'bg-stone-50 border-stone-200 opacity-60 line-through' : 'bg-cream border-stone-200'}`;
-            lbl.innerHTML = `<div class="flex items-center gap-2.5"><input type="checkbox" ${chk ? 'checked' : ''} class="w-4 h-4 accent-sage-600"/><span class="text-sm font-medium">${item.name}</span></div><span class="text-xs font-semibold text-stone-500">${item.amount}</span>`;
-            lbl.querySelector('input').onchange = e => { state.checkedShopping[key] = e.target.checked; saveState(); renderDashboardData(); };
-            list.appendChild(lbl);
-          });
-          shopBox.appendChild(sec);
-        });
-
-        // Library
-        const q = ($('input-lib-search')?.value || '').trim().toLowerCase();
-        const flt = $('select-lib-filter')?.value || 'all';
-        const libItems = state.recipeLibrary.filter(r => (flt !== 'custom' || r.isCustom) && (flt === 'all' || flt === 'custom' || r.tags?.includes(flt)) && (!q || `${r.title} ${r.cuisine} ${(r.ingredients || []).map(i => i.name).join(' ')}`.toLowerCase().includes(q)));
-        const libBox = $('library-grid-container');
-        libBox.innerHTML = libItems.length ? '' : '<p class="text-sm text-stone-500 col-span-full">Keine passenden Rezepte gefunden.</p>';
-        libItems.forEach(r => {
-          const d = document.createElement('div');
-          d.className = 'p-4 rounded-2xl bg-cream border border-stone-200 flex flex-col justify-between gap-3';
-          d.innerHTML = `<div><div class="flex justify-between gap-2 text-[11px] font-semibold mb-1"><span class="px-2.5 py-0.5 rounded-full bg-sage-100 text-sage-700">${r.cuisine || 'Rezept'}${r.isCustom ? ' · Eigenes' : ''}</span><span class="text-stone-500">${r.prepTime || 25} Min. · ~ ${formatEuro(r.baseCost || 6)}</span></div><h3 class="font-bold text-stone-900 text-sm sm:text-base">${r.emoji || '🍽️'} ${r.title}</h3><p class="text-xs text-stone-600 mt-1 line-clamp-2"><strong>Zutaten:</strong> ${(r.ingredients || []).map(i => `${i.amount} ${i.name}`).join(', ')}</p></div><div class="flex justify-between items-center pt-2 border-t border-stone-200/80"><button type="button" data-ins="${r.id}" class="text-xs font-bold text-sage-700 hover:underline">📅 In Plan einsetzen</button><button type="button" data-del="${r.id}" class="text-xs px-2.5 py-1 rounded-lg bg-white border border-stone-300 text-stone-600 hover:bg-red-50 hover:text-red-700">🗑️ Löschen</button></div>`;
-          libBox.appendChild(d);
-        });
-        libBox.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { state.recipeLibrary = state.recipeLibrary.filter(x => x.id !== b.dataset.del); saveState(); renderDashboardData(); updateCounts(); });
-        libBox.querySelectorAll('[data-ins]').forEach(b => b.onclick = () => {
-          const rec = state.recipeLibrary.find(x => x.id === b.dataset.ins);
-          if (!rec || !state.plan?.length) return showToast('Kein aktiver Wochenplan vorhanden.');
-          const pick = prompt(`Slot-Nummer wählen:\n${state.plan.map((m, i) => `${i + 1}: ${m.day} (${m.slot}) – ${m.title}`).join('\n')}`, '1');
-          const m = state.plan[Number(pick) - 1];
-          if (m) { Object.assign(m, { isLeftover: false, emoji: rec.emoji || '🍽️', cuisine: rec.cuisine || 'Bibliothek', title: rec.title, desc: rec.desc || rec.title, prepTime: rec.prepTime || 25, kcal: rec.kcal || 540, estimatedCost: Number(rec.baseCost) || 6, ingredients: rec.ingredients.map(i => ({ ...i })), steps: [...rec.steps] }); state.mealImages[rec.title] = generateFoodPhotoCanvas(m); saveState(); renderDashboardData(); showToast(`✅ „${rec.title}“ eingesetzt!`); }
-        });
-
-        // Favorites & Blacklist
-        $('favorites-list-container').innerHTML = state.favorites.length ? state.favorites.map((f, i) => `<div class="p-3.5 rounded-2xl bg-cream border border-stone-200 flex items-center justify-between gap-2"><div><div class="text-sm font-bold">${f.title}</div><div class="text-xs text-stone-500">${formatEuro(f.estimatedCost)} · ${f.prepTime} Min.</div></div><button type="button" data-rf="${i}" class="text-xs px-3 py-1.5 rounded-xl bg-white border">Entfernen</button></div>`).join('') : '<p class="text-xs text-stone-500">Noch keine Favoriten.</p>';
-        $('favorites-list-container').querySelectorAll('[data-rf]').forEach(b => b.onclick = () => { state.favorites.splice(Number(b.dataset.rf), 1); saveState(); renderDashboardData(); updateCounts(); });
-
-        $('blacklist-container').innerHTML = state.blacklist.length ? state.blacklist.map((x, i) => `<div class="p-3.5 rounded-2xl bg-red-50/50 border border-red-200 flex items-center justify-between gap-2"><span class="text-sm font-medium">${x}</span><button type="button" data-rb="${i}" class="text-xs px-3 py-1.5 rounded-xl bg-white border">Aufheben</button></div>`).join('') : '<p class="text-xs text-stone-500">Blacklist leer.</p>';
-        $('blacklist-container').querySelectorAll('[data-rb]').forEach(b => b.onclick = () => { state.blacklist.splice(Number(b.dataset.rb), 1); saveState(); renderDashboardData(); updateCounts(); });
-
-        // Feedback rules
-        $('feedback-history-list').innerHTML = state.feedbackHistory.length ? state.feedbackHistory.map((r, i) => `<div class="p-3 rounded-2xl bg-sage-50 border border-sage-200 flex items-center justify-between gap-2 text-xs"><span class="font-medium">✓ ${r}</span><button type="button" data-df="${i}" class="text-stone-400 hover:text-red-600 font-bold">✕</button></div>`).join('') : '<p class="text-xs text-stone-500">Keine Lernregeln gespeichert.</p>';
-        $('feedback-history-list').querySelectorAll('[data-df]').forEach(b => b.onclick = () => { state.feedbackHistory.splice(Number(b.dataset.df), 1); saveState(); renderDashboardData(); updateCounts(); });
-      }
-
-      function saveMealToLibrary(id) {
-        const m = state.plan?.find(x => x.id === id);
-        if (!m || m.isLeftover) return;
-        if (state.recipeLibrary.some(r => r.title.toLowerCase() === m.title.toLowerCase())) return showToast('Bereits in der Bibliothek.');
-        state.recipeLibrary.unshift({ id: 'custom-' + Date.now(), isCustom: true, emoji: m.emoji || '🍽️', cuisine: m.cuisine || 'KI-Kreation', title: m.title, desc: m.desc || '', tags: [state.prefs.diet], allergens: [], prepTime: m.prepTime || 25, kcal: m.kcal || 540, baseCost: parsePrice(m.estimatedCost) || 6, ingredients: (m.ingredients || []).map(i => ({ ...i })), steps: [...(m.steps || [])] });
-        saveState(); renderDashboardData(); updateCounts(); showToast('📚 In Bibliothek gespeichert!');
-      }
-
-      function toggleFavorite(id) {
-        const m = state.plan?.find(x => x.id === id);
-        if (!m) return;
-        const i = state.favorites.findIndex(f => f.title === m.title);
-        if (i >= 0) { state.favorites.splice(i, 1); showToast('Aus Favoriten entfernt'); }
-        else { state.favorites.push({ ...m }); showToast('❤️ Als Favorit gespeichert!'); }
-        saveState(); renderDashboardData(); updateCounts();
-      }
-
-      function pushLeftover(id) {
-        const i = state.plan?.findIndex(x => x.id === id) ?? -1;
-        if (i < 0 || i + 1 >= state.plan.length) return showToast('Kein nachfolgender Slot frei.');
-        const src = state.plan[i], dst = state.plan[i + 1];
-        Object.assign(dst, { isLeftover: true, title: `Reste: ${src.title.replace(/^Reste:\s*/, '')}`, desc: `Von ${src.day} (${src.slot}).`, prepTime: 10, estimatedCost: 0, ingredients: [], steps: ['Schonend erwärmen.'] });
-        saveState(); renderDashboardData(); showToast(`🥡 Reste auf ${dst.day} (${dst.slot}) gelegt!`);
-      }
-
-      function openRecipeModal(id) {
-        const m = state.plan?.find(x => x.id === id);
-        if (!m) return;
-        activeModalMealId = id;
-        $('modal-slot-label').textContent = `${m.day} · ${m.slot}`;
-        $('modal-time-label').textContent = `⏱ ${m.prepTime} Min.`;
-        $('modal-cost-label').textContent = m.isLeftover ? '0,00 € (Reste)' : `~ ${formatEuro(m.estimatedCost)}`;
-        $('modal-kcal-label').textContent = `${m.kcal} kcal`;
-        $('modal-meal-title').textContent = m.title;
-        $('modal-meal-desc').textContent = m.desc;
-        const img = $('modal-meal-image'), ph = $('modal-image-placeholder');
-        if (state.mealImages[m.title]) { img.src = state.mealImages[m.title]; img.classList.remove('hidden'); ph.classList.add('hidden'); }
-        else { img.classList.add('hidden'); ph.classList.remove('hidden'); }
-        $('modal-ingredients-list').innerHTML = m.ingredients?.length ? m.ingredients.map(i => `<li><strong>${i.amount}</strong> ${i.name}</li>`).join('') : '<li>Keine neuen Zutaten (Reste).</li>';
-        $('modal-steps-list').innerHTML = (m.steps || []).map(s => `<li>${s}</li>`).join('');
-        $('recipe-modal').classList.remove('hidden');
-      }
-
-      function showLanding() {
-        $('landing-view').classList.remove('hidden'); $('wizard-view').classList.add('hidden'); $('dashboard-view').classList.add('hidden');
-        updateCounts();
-      }
-
-      function showDashboard(tab = 'plan', note = '') {
-        $('landing-view').classList.add('hidden'); $('wizard-view').classList.add('hidden'); $('dashboard-view').classList.remove('hidden');
-        if (state.plan?.length) $('btn-open-share').classList.remove('hidden');
-        const p = state.prefs;
-        $('dashboard-subtitle').textContent = `${p.adults} Erw.${p.children ? `, ${p.children} Ki.` : ''} · ${p.diet} · ${p.supermarkets.join(', ') || 'Alle'}${note ? ` (${note})` : ''}`;
-        renderDashboardData();
-        document.querySelectorAll('.dash-tab').forEach(b => b.className = `dash-tab px-4 py-2 rounded-xl text-sm font-semibold ${b.dataset.tab === tab ? 'bg-sage-500 text-white' : 'bg-white text-stone-700 border border-stone-200'}`);
-        document.querySelectorAll('.dash-tab-content').forEach(c => c.classList.toggle('hidden', c.id !== `tab-${tab}`));
-      }
-
-      function showWizard() {
-        $('landing-view').classList.add('hidden'); $('dashboard-view').classList.add('hidden'); $('wizard-view').classList.remove('hidden');
-        renderWizardControls(); refreshWizardNumbers(); goToStep(state.currentStep || 1);
-      }
-
-      function bindEvents() {
-        $('header-brand').onclick = $('btn-go-landing').onclick = showLanding;
-        $('landing-btn-open-plan').onclick = () => showDashboard('plan');
-        $('landing-btn-open-shopping').onclick = () => showDashboard('shopping');
-        $('landing-btn-start-wizard').onclick = showWizard;
-        $('landing-btn-quick-generate').onclick = generateMealPlanOnline;
-        document.querySelectorAll('[data-landing-nav]').forEach(c => c.onclick = () => showDashboard(c.dataset.landingNav));
-
-        $('btn-repair-app').onclick = () => { localStorage.removeItem(PLAN_KEY); localStorage.removeItem(MODEL_CACHE_KEY); location.href = location.pathname; };
-
-        $('btn-open-apikey').onclick = $('btn-banner-apikey').onclick = () => { $('input-api-key').value = getApiKey(); $('apikey-test-status').classList.add('hidden'); $('apikey-modal').classList.remove('hidden'); };
-        $('btn-close-apikey').onclick = () => $('apikey-modal').classList.add('hidden');
-        $('btn-save-apikey').onclick = () => { setApiKey($('input-api-key').value); $('apikey-modal').classList.add('hidden'); showToast('🔑 API-Key gespeichert!'); };
-        $('btn-test-apikey').onclick = async () => {
-          const val = $('input-api-key').value.trim(), st = $('apikey-test-status');
-          if (!val) return showToast('Bitte API-Key eingeben.');
-          setApiKey(val); st.className = 'text-xs font-medium p-3 rounded-xl bg-stone-100'; st.textContent = 'Prüfe Key (0 Tokens)...'; st.classList.remove('hidden');
-          try { const m = await resolveAvailableModel(val); st.className = 'text-xs font-semibold p-3 rounded-xl bg-emerald-50 text-emerald-700'; st.textContent = `✓ Key gültig (${m}) – 0 Tokens!`; }
-          catch (e) { st.className = 'text-xs font-medium p-3 rounded-xl bg-red-50 text-red-700'; st.textContent = `Fehler: ${e.message}`; }
-        };
-
-        const syncSlider = (id, prop, min, max) => {
-          const el = $(id);
-          const fn = () => { state.prefs[prop] = Math.max(min, Math.min(max, Number(el.value))); refreshWizardNumbers(); saveState(); };
-          el.oninput = el.onchange = fn;
-        };
-        syncSlider('slider-budget', 'budget', 20, 300);
-        syncSlider('slider-cooktime', 'maxCookTime', 15, 90);
-
-        $('btn-budget-minus').onclick = () => { state.prefs.budget -= 5; refreshWizardNumbers(); saveState(); };
-        $('btn-budget-plus').onclick = () => { state.prefs.budget += 5; refreshWizardNumbers(); saveState(); };
-        $('btn-time-minus').onclick = () => { state.prefs.maxCookTime -= 5; refreshWizardNumbers(); saveState(); };
-        $('btn-time-plus').onclick = () => { state.prefs.maxCookTime += 5; refreshWizardNumbers(); saveState(); };
-
-        const bounds = { adults: [1, 10], children: [0, 10], shoppingTrips: [1, 7] };
-        document.querySelectorAll('[data-counter]').forEach(b => {
-          b.onclick = () => {
-            const [k, d] = b.dataset.counter.split(':');
-            const [lo, hi] = bounds[k];
-            state.prefs[k] = Math.max(lo, Math.min(hi, state.prefs[k] + Number(d)));
-            refreshWizardNumbers(); saveState();
-          };
-        });
-
-        $('btn-add-market').onclick = () => { const v = $('input-custom-market').value.trim(); if (v && !state.prefs.supermarkets.includes(v)) { state.prefs.supermarkets.push(v); $('input-custom-market').value = ''; saveState(); renderWizardControls(); } };
-        $('btn-add-nogo').onclick = () => { const v = $('input-custom-nogo').value.trim(); if (v && !state.prefs.nogos.includes(v)) { state.prefs.nogos.push(v); $('input-custom-nogo').value = ''; saveState(); renderWizardControls(); } };
-        $('input-health-notes').oninput = e => { state.prefs.healthNotes = e.target.value; saveState(); };
-        $('input-custom-goal').oninput = e => { state.prefs.customGoal = e.target.value; saveState(); };
-
-        document.querySelectorAll('.preset-btn').forEach(b => b.onclick = () => {
-          state.prefs.schedule.forEach((r, i) => {
-            if (b.dataset.preset === 'all-dinner') { r.lunch = 'off'; r.dinner = 'cook'; }
-            else if (b.dataset.preset === 'workweek') { r.lunch = i >= 5 ? 'cook' : 'off'; r.dinner = i === 3 ? 'leftover' : 'cook'; }
-            else { r.lunch = (i === 2 || i === 4) ? 'leftover' : 'cook'; r.dinner = 'cook'; }
-          });
-          saveState(); renderWizardControls(); refreshWizardNumbers();
-        });
-
-        document.querySelectorAll('.step-pill').forEach(p => p.onclick = () => goToStep(Number(p.dataset.gotoStep)));
-        $('btn-prev-step').onclick = () => goToStep(state.currentStep - 1);
-        $('btn-next-step').onclick = () => goToStep(state.currentStep + 1);
-        $('btn-generate-plan').onclick = generateMealPlanOnline;
-
-        $('btn-open-wizard').onclick = showWizard;
-        $('btn-regenerate-week').onclick = generateMealPlanOnline;
-        $('btn-generate-from-library').onclick = generateMealPlanFromLibrary;
-        $('btn-quick-edit-budget').onclick = () => {
-          const v = parseFloat((prompt('Neues Budget (€):', String(state.prefs.budget)) || '').replace(',', '.'));
-          if (!isNaN(v) && v >= 10) { state.prefs.budget = v; saveState(); renderDashboardData(); refreshWizardNumbers(); updateCounts(); }
-        };
-
-        document.querySelectorAll('.dash-tab').forEach(b => b.onclick = () => showDashboard(b.dataset.tab));
-
-        $('btn-toggle-add-recipe').onclick = () => $('form-add-recipe').classList.toggle('hidden');
-        $('btn-cancel-add-recipe').onclick = () => $('form-add-recipe').classList.add('hidden');
-        $('form-add-recipe').onsubmit = e => {
-          e.preventDefault();
-          const title = $('lib-new-title').value.trim(), cuisine = $('lib-new-cuisine').value, diet = $('lib-new-diet').value;
-          const ingredients = $('lib-new-ingredients').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-            const m = l.match(/^([\d.,]+\s*(?:g|kg|ml|l|EL|TL|Stück|Dose|Dosen|Bund|Pkg\.?)?)\s+(.+)$/i);
-            return m ? { amount: m[1].trim(), name: m[2].trim(), dept: 'Eigene Zutaten' } : { amount: '1×', name: l, dept: 'Eigene Zutaten' };
-          });
-          const steps = $('lib-new-steps').value.split('\n').map(l => l.trim()).filter(Boolean);
-          const tags = diet === 'Vegan' ? ['Vegan', 'Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'] : diet === 'Vegetarisch' ? ['Vegetarisch', 'Allesesser (Mischkost)', 'Flexitarisch (wenig Fleisch)', 'Pescetarisch'] : [diet, 'Allesesser (Mischkost)'];
-          state.recipeLibrary.unshift({ id: 'custom-' + Date.now(), isCustom: true, emoji: $('lib-new-emoji').value.trim() || '🍲', cuisine, title, desc: `Eigenes Rezept (${cuisine})`, tags, allergens: [], prepTime: Number($('lib-new-time').value) || 25, kcal: 550, baseCost: Number($('lib-new-cost').value) || 6, ingredients, steps });
-          saveState(); e.target.reset(); $('form-add-recipe').classList.add('hidden'); renderDashboardData(); updateCounts(); showToast(`📚 „${title}“ gespeichert!`);
-        };
-        $('input-lib-search').oninput = $('select-lib-filter').onchange = renderDashboardData;
-
-        $('btn-export-notes').onclick = async () => {
-          const rawIngs = [];
-          (state.plan || []).forEach(m => { if (!m.isLeftover) (m.ingredients || []).forEach(i => rawIngs.push(i)); });
-          const merged = consolidateIngredients(rawIngs);
-          const lines = [`🛒 Einkaufsliste (${formatEuro(state.prefs.budget)})`, '', ...merged.map(i => `☐ ${i.amount} ${i.name}`)];
-          try { await navigator.clipboard.writeText(lines.join('\n')); } catch (_) {}
-          showToast('📝 Gebündelte Einkaufsliste kopiert!');
-        };
-        $('btn-download-md').onclick = () => {
-          const rawIngs = [];
-          (state.plan || []).forEach(m => { if (!m.isLeftover) (m.ingredients || []).forEach(i => rawIngs.push(i)); });
-          const merged = consolidateIngredients(rawIngs);
-          const lines = ['# Einkaufsliste\n', ...merged.map(i => `- [ ] ${i.amount} ${i.name}`)];
-          const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' })); a.download = 'einkaufsliste-kulinaris.md'; a.click();
-        };
-
-        $('btn-add-manual-ban').onclick = () => { const v = $('input-manual-ban').value.trim(); if (v && !state.blacklist.includes(v)) { state.blacklist.unshift(v); $('input-manual-ban').value = ''; saveState(); renderDashboardData(); updateCounts(); } };
-        document.querySelectorAll('.fb-tag').forEach(b => b.onclick = () => { $('input-feedback-text').value = $('input-feedback-text').value ? `${$('input-feedback-text').value}; ${b.dataset.fb}` : b.dataset.fb; });
-        $('btn-save-feedback').onclick = () => { const v = $('input-feedback-text').value.trim(); if (!v) return; state.feedbackHistory.unshift(v); $('input-feedback-text').value = ''; saveState(); renderDashboardData(); updateCounts(); showToast('🧠 Lernregel gespeichert!'); };
-
-        const backupObj = () => JSON.stringify({ prefs: state.prefs, recipeLibrary: state.recipeLibrary, favorites: state.favorites, blacklist: state.blacklist, feedbackHistory: state.feedbackHistory });
-        $('btn-export-profile-copy').onclick = async () => { try { await navigator.clipboard.writeText(backupObj()); } catch (_) {} showToast('📋 Backup kopiert!'); };
-        $('btn-export-profile-file').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(JSON.parse(backupObj()), null, 2)], { type: 'application/json' })); a.download = 'kulinaris-backup.json'; a.click(); };
-        $('btn-import-profile').onclick = () => {
-          try {
-            const p = JSON.parse($('input-import-profile').value.trim());
-            if (p.prefs) state.prefs = { ...state.prefs, ...p.prefs };
-            if (Array.isArray(p.recipeLibrary)) state.recipeLibrary = p.recipeLibrary;
-            if (Array.isArray(p.favorites)) state.favorites = p.favorites;
-            if (Array.isArray(p.blacklist)) state.blacklist = p.blacklist;
-            if (Array.isArray(p.feedbackHistory)) state.feedbackHistory = p.feedbackHistory;
-            saveState(); $('input-import-profile').value = ''; renderDashboardData(); updateCounts(); showToast('✅ Backup wiederhergestellt!');
-          } catch (_) { showToast('❌ Ungültiger Backup-Code.'); }
-        };
-
-        $('btn-close-recipe-modal').onclick = () => $('recipe-modal').classList.add('hidden');
-        $('btn-modal-swap').onclick = async () => { const w = $('input-swap-wish').value.trim(); $('input-swap-wish').value = ''; await swapSingleMeal(activeModalMealId, w); openRecipeModal(activeModalMealId); };
-        $('btn-modal-fav').onclick = () => toggleFavorite(activeModalMealId);
-        $('btn-modal-save-lib').onclick = () => saveMealToLibrary(activeModalMealId);
-        $('btn-modal-ban').onclick = async () => {
-          const m = state.plan?.find(x => x.id === activeModalMealId);
-          if (m && !state.blacklist.includes(m.title)) { state.blacklist.push(m.title); saveState(); $('recipe-modal').classList.add('hidden'); renderDashboardData(); updateCounts(); await swapSingleMeal(activeModalMealId); }
-        };
-        $('btn-modal-leftover').onclick = () => { pushLeftover(activeModalMealId); $('recipe-modal').classList.add('hidden'); };
-        $('btn-modal-gen-img').onclick = () => {
-          const m = state.plan?.find(x => x.id === activeModalMealId);
-          if (!m) return;
-          state.mealImages[m.title] = generateFoodPhotoCanvas(m); saveState(); openRecipeModal(activeModalMealId); renderDashboardData();
-        };
-
-        $('btn-open-share').onclick = () => { $('share-link-input').value = `${location.origin}${location.pathname}#plan=${encodeURIComponent(JSON.stringify({ prefs: state.prefs, plan: state.plan }))}`; $('share-modal').classList.remove('hidden'); };
-        $('btn-close-share-modal').onclick = () => $('share-modal').classList.add('hidden');
-        $('btn-copy-share-link').onclick = async () => { try { await navigator.clipboard.writeText($('share-link-input').value); } catch (_) {} showToast('🔗 Link kopiert!'); };
-        $('btn-copy-share-text').onclick = async () => { try { await navigator.clipboard.writeText((state.plan || []).map(m => `${m.day} (${m.slot}): ${m.title}`).join('\n')); } catch (_) {} showToast('📋 Plan kopiert!'); };
-        $('btn-native-share').onclick = async () => {
-          const txt = (state.plan || []).map(m => `${m.day} (${m.slot}): ${m.title}`).join('\n');
-          if (navigator.share) { try { await navigator.share({ title: 'Kulinaris Wochenplan', text: txt }); return; } catch (_) {} }
-          try { await navigator.clipboard.writeText(txt); } catch (_) {} showToast('📋 Plan kopiert!');
-        };
-
-        window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstallPrompt = e; $('btn-install-pwa').classList.remove('hidden'); });
-        $('btn-install-pwa').onclick = async () => { if (!deferredInstallPrompt) return; deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; $('btn-install-pwa').classList.add('hidden'); };
-      }
-
-      document.addEventListener('DOMContentLoaded', () => {
-        const iconUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#4A7C59"/><text x="256" y="345" font-family="Georgia,serif" font-size="300" font-weight="bold" fill="#FAF8F5" text-anchor="middle">K</text></svg>');
-        const l = document.createElement('link'); l.rel = 'manifest';
-        l.href = URL.createObjectURL(new Blob([JSON.stringify({ name: 'Kulinaris', short_name: 'Kulinaris', start_url: './', display: 'standalone', background_color: '#FAF8F5', theme_color: '#4A7C59', icons: [{ src: iconUrl, sizes: '512x512', type: 'image/svg+xml' }] })], { type: 'application/manifest+json' }));
-        document.head.appendChild(l);
-
-        loadState();
-        updateApiKeyStatusUI();
-        bindEvents();
-
-        try {
-          if (location.hash.startsWith('#plan=')) {
-            const p = JSON.parse(decodeURIComponent(location.hash.slice(6)));
-            if (Array.isArray(p?.plan)) {
-              pendingSharedPayload = p; $('shared-plan-banner').classList.remove('hidden');
-              $('btn-accept-shared').onclick = () => { state.prefs = { ...state.prefs, ...(p.prefs || {}) }; state.plan = p.plan; saveState(); history.replaceState(null, '', location.pathname); $('shared-plan-banner').classList.add('hidden'); showDashboard('plan'); };
-              $('btn-dismiss-shared').onclick = () => { history.replaceState(null, '', location.pathname); $('shared-plan-banner').classList.add('hidden'); };
-            }
-          }
-        } catch (_) {}
-
-        showLanding();
-      });
-    })();
-  </script>
-</body>
-</html>
+        renderChips('equipment-chips', EQUIPMENT,
