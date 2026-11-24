@@ -548,7 +548,7 @@
         <h2 class="text-xl font-bold">🔑 Google Gemini API-Key</h2>
         <button type="button" id="btn-close-apikey" class="w-8 h-8 rounded-full bg-stone-100 font-bold">✕</button>
       </div>
-      <p class="text-xs sm:text-sm text-stone-600">Wird lokal gespeichert. Wählt automatisch ein funktionierendes Gemini-Modell (Test = <strong>0 Tokens</strong>).</p>
+      <p class="text-xs sm:text-sm text-stone-600">Wird lokal gespeichert. Wählt automatisch ein verfügbares Gemini-Modell (Test = <strong>0 Tokens</strong>).</p>
       <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-stone-300" />
       <div id="apikey-test-status" class="hidden text-xs font-medium p-3 rounded-xl"></div>
       <div class="flex flex-wrap gap-2">
@@ -620,19 +620,19 @@
   <div id="loading-overlay" class="hidden fixed inset-0 z-50 bg-cream/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
     <div class="w-14 h-14 border-4 border-sage-200 border-t-sage-600 rounded-full animate-spin mb-4"></div>
     <h3 id="loading-title" class="text-xl font-bold text-stone-900">Gemini KI erstellt deinen Wochenplan...</h3>
-    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Wird in kompakten Etappen generiert...</p>
+    <p id="loading-subtitle" class="text-sm text-stone-600 mt-1 max-w-md">Wird in 2 kompakten Etappen generiert...</p>
   </div>
 
   <div id="toast" class="fixed bottom-5 right-5 z-50 hidden px-4 py-3 rounded-2xl bg-stone-900 text-white text-sm font-medium shadow-xl"></div>
 
   <script>
     (() => {
-      const APP_VERSION = '2026-11-24-v25';
+      const APP_VERSION = '2026-11-24-v26';
       const VERSION_STORAGE = 'kulinaris_app_version';
       const PROFILE_KEY = 'kulinaris_persistent_memory_v1';
-      const PLAN_KEY = 'kulinaris_active_plan_v25';
+      const PLAN_KEY = 'kulinaris_active_plan_v26';
       const API_KEY_STORAGE = 'kulinaris_gemini_api_key';
-      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v25';
+      const MODEL_CACHE_KEY = 'kulinaris_resolved_model_v26';
 
       const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
       const SUPERMARKETS = ['Rewe', 'Edeka', 'Lidl', 'Aldi', 'dm / Bio-Markt', 'Wochenmarkt', 'Penny'];
@@ -686,7 +686,6 @@
       let activeModalMealId = null;
       let pendingSharedPayload = null;
       let deferredInstallPrompt = null;
-      let cachedCandidateModels = [];
 
       const $ = (id) => document.getElementById(id);
       const formatEuro = (n) => Number(n || 0).toFixed(2).replace('.', ',') + ' €';
@@ -749,7 +748,6 @@
       function setApiKey(key) {
         localStorage.setItem(API_KEY_STORAGE, key.trim());
         localStorage.removeItem(MODEL_CACHE_KEY);
-        cachedCandidateModels = [];
         updateApiKeyStatusUI();
       }
       function updateApiKeyStatusUI() {
@@ -766,52 +764,35 @@
         finally { clearTimeout(t); }
       }
 
-      function rankGeminiModels(modelNames) {
-        const isValid = (n) => /^[a-zA-Z0-9._-]+$/.test(n) && !/(image|tts|embedding|live|aqa|vision|robotics|computer-use|deep-research)/i.test(n);
-        const filtered = Array.from(new Set(modelNames.filter(isValid)));
-        const score = (n) => {
-          let s = 0;
-          if (n.includes('flash')) s += 40;
-          if (n.includes('flash-lite')) s += 20;
-          if (/^gemini-3\./.test(n)) s += 30;
-          else if (/^gemini-2\.5/.test(n)) s += 25;
-          else if (/^gemini-2\.0/.test(n)) s += 15;
-          if (/-latest$/.test(n)) s -= 25;
-          if (/exp|preview/.test(n)) s -= 10;
-          return s;
-        };
-        return filtered.sort((a, b) => score(b) - score(a));
-      }
+      async function resolveAvailableModel(apiKey) {
+        const cached = localStorage.getItem(MODEL_CACHE_KEY);
+        if (cached && /^[a-zA-Z0-9._-]+$/.test(cached) && !/(image|tts|embedding|live|aqa|vision)/i.test(cached)) {
+          return cached;
+        }
 
-      async function getCandidateModels(apiKey) {
-        if (cachedCandidateModels.length) return cachedCandidateModels;
-
-        const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`, {}, 12000);
+        const res = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
+          {},
+          10000
+        );
         const raw = await res.text();
         let data;
         try { data = JSON.parse(raw); } catch (_) { throw new Error(`HTTP ${res.status}: ${cleanHtmlErrorText(raw)}`); }
         if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
 
-        const rawNames = (data.models || [])
+        const models = (data.models || [])
           .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
-          .map(m => String(m.name || '').replace(/^models\//, '').trim());
+          .map(m => String(m.name || '').replace(/^models\//, '').trim())
+          .filter(n => /^[a-zA-Z0-9._-]+$/.test(n) && !/(image|tts|embedding|live|aqa|vision)/i.test(n));
 
-        const ranked = rankGeminiModels(rawNames);
-        if (!ranked.length) throw new Error('Kein passendes Gemini-Textmodell gefunden.');
+        const picked =
+          models.find(n => n.includes('flash-lite')) ||
+          models.find(n => n.includes('flash')) ||
+          models[0];
 
-        const cached = localStorage.getItem(MODEL_CACHE_KEY);
-        if (cached && ranked.includes(cached) && !/-latest$/.test(cached)) {
-          cachedCandidateModels = [cached, ...ranked.filter(m => m !== cached)];
-        } else {
-          cachedCandidateModels = ranked;
-        }
-        return cachedCandidateModels;
-      }
-
-      async function resolveAvailableModel(apiKey) {
-        const list = await getCandidateModels(apiKey);
-        localStorage.setItem(MODEL_CACHE_KEY, list[0]);
-        return list[0];
+        if (!picked) throw new Error('Kein passendes Gemini-Textmodell gefunden.');
+        localStorage.setItem(MODEL_CACHE_KEY, picked);
+        return picked;
       }
 
       function extractJsonObject(rawText) {
@@ -842,60 +823,48 @@
           throw new Error('Bitte zuerst den Gemini API-Key hinterlegen.');
         }
 
-        const candidates = (await getCandidateModels(apiKey)).slice(0, 4);
-        let lastError = null;
+        let model = await resolveAvailableModel(apiKey);
 
-        for (const model of candidates) {
-          const cleanM = encodeURIComponent(model);
-          const url = `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){cleanM}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const send = (useJsonMime) => {
+          const cleanM = encodeURIComponent(String(model).replace(/^models\//, '').trim());
+          const cfg = { temperature: 0.7, maxOutputTokens: 4096 };
+          if (useJsonMime) cfg.responseMimeType = 'application/json';
+          return fetchWithTimeout(
+            `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){cleanM}:generateContent?key=${encodeURIComponent(apiKey)}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: cfg
+              })
+            },
+            timeoutMs
+          );
+        };
 
-          const send = (useJsonMime) => {
-            const cfg = { temperature: 0.7, maxOutputTokens: 4096 };
-            if (useJsonMime) cfg.responseMimeType = 'application/json';
-            return fetchWithTimeout(
-              url,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], generationConfig: cfg })
-              },
-              timeoutMs
-            );
-          };
-
-          try {
-            let res = await send(true);
-            if (res.status === 400) res = await send(false);
-
-            const raw = await res.text();
-            let data;
-            try { data = JSON.parse(raw); } catch (_) { throw new Error(`HTTP ${res.status}: ${cleanHtmlErrorText(raw)}`); }
-
-            if (!res.ok) {
-              const msg = data?.error?.message || `HTTP ${res.status}`;
-              if (res.status === 429 || /quota|rate limit/i.test(msg)) {
-                lastError = new Error('Free-Tier Ratenlimit erreicht (bitte kurz warten).');
-                continue;
-              }
-              lastError = new Error(`${model}: ${msg}`);
-              continue;
-            }
-
-            const parts = data?.candidates?.[0]?.content?.parts || [];
-            const text = (parts.find(p => typeof p.text === 'string' && !p.thought) || parts.find(p => typeof p.text === 'string'))?.text || '';
-            const parsed = extractJsonObject(text);
-
-            localStorage.setItem(MODEL_CACHE_KEY, model);
-            cachedCandidateModels = [model, ...cachedCandidateModels.filter(m => m !== model)];
-            return { parsed, model };
-          } catch (err) {
-            lastError = err;
-          }
+        let res = await send(true);
+        if (res.status === 400) res = await send(false);
+        if (res.status === 404) {
+          localStorage.removeItem(MODEL_CACHE_KEY);
+          model = await resolveAvailableModel(apiKey);
+          res = await send(false);
         }
 
-        localStorage.removeItem(MODEL_CACHE_KEY);
-        cachedCandidateModels = [];
-        throw lastError || new Error('Kein Gemini-Modell konnte den Plan generieren.');
+        const raw = await res.text();
+        let data;
+        try { data = JSON.parse(raw); } catch (_) { throw new Error(`HTTP ${res.status}: ${cleanHtmlErrorText(raw)}`); }
+        if (!res.ok) {
+          const msg = data?.error?.message || `HTTP ${res.status}`;
+          if (res.status === 429 || /quota|rate limit/i.test(msg)) {
+            throw new Error('Free-Tier Ratenlimit erreicht (bitte kurz warten).');
+          }
+          throw new Error(msg);
+        }
+
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        const text = (parts.find(p => typeof p.text === 'string' && !p.thought) || parts.find(p => typeof p.text === 'string'))?.text || '';
+        return { parsed: extractJsonObject(text), model };
       }
 
       function generateFoodPhotoCanvas(meal) {
@@ -918,49 +887,30 @@
         });
         if (!activeSlots.length) return showToast('Bitte mindestens einen Slot in der Wochen-Matrix aktivieren.');
 
-        const BATCH_SIZE = 4;
-        const batches = [];
-        for (let i = 0; i < activeSlots.length; i += BATCH_SIZE) batches.push(activeSlots.slice(i, i + BATCH_SIZE));
-
-        $('loading-overlay').classList.remove('hidden');
+        const mid = Math.ceil(activeSlots.length / 2);
+        const batches = [activeSlots.slice(0, mid), activeSlots.slice(mid)].filter(h => h.length);
         const meals = [];
         let usedModel = '';
 
+        $('loading-overlay').classList.remove('hidden');
         try {
           for (let i = 0; i < batches.length; i++) {
             const batch = batches[i];
-            const cookCount = batch.filter(s => s.mode === 'cook').length;
-            $('loading-title').textContent = `Block ${i + 1} von ${batches.length} wird generiert...`;
-            $('loading-subtitle').textContent = batch.map(s => `${s.day.slice(0, 2)} (${s.slot.slice(0, 2)})`).join(' · ');
+            $('loading-title').textContent = `Teil ${i + 1} von ${batches.length} wird generiert...`;
+            $('loading-subtitle').textContent = `${batch[0].day} bis ${batch[batch.length - 1].day}`;
 
-            const prompt = `Antworte NUR als kompaktes JSON ohne Markdown. Plane exakt diese ${batch.length} Slots für ${p.adults} Erw., ${p.children} Ki., Teilbudget ${Math.max(5, Math.round((p.budget / activeSlots.length) * batch.length))}€.
-Ernährung: ${p.diet} | Allergien MEIDEN: ${p.allergies.join(',') || 'keine'} | No-Gos MEIDEN: ${p.nogos.join(',') || 'keine'}
+            const prompt = `Antworte NUR als JSON ohne Markdown. Plane diese ${batch.length} Slots für ${p.adults} Erw., ${p.children} Ki., Budget ${Math.round(p.budget / batches.length)}€.
+Ernährung: ${p.diet} | Allergien meiden: ${p.allergies.join(',') || 'keine'} | No-Gos meiden: ${p.nogos.join(',') || 'keine'}
 Küchen: ${p.cuisines.join(',') || 'alle'} | Max. Zeit: ${p.maxCookTime} Min. | Ziele: ${p.goals.join(',')} ${p.customGoal || ''}
-Eigene Rezepte: ${state.recipeLibrary.filter(r => r.isCustom).map(r => r.title).join(',') || 'keine'}
-Favoriten: ${state.favorites.map(f => f.title).join(',') || 'keine'} | Blacklist (NIE): ${state.blacklist.join(',') || 'keine'}
-Lernregeln: ${state.feedbackHistory.join('; ') || 'keine'} | Bereits geplant: ${meals.map(m => m.title).join(', ') || 'nichts'}
-Regeln: Alle ${cookCount} mode="cook"-Slots müssen verschiedene Gerichte sein (max. 8 Wörter desc, max. 4 Zutaten, max. 2 Schritte). mode="leftover": isLeftover:true, estimatedCost:0, ingredients:[].
+Favoriten: ${state.favorites.map(f => f.title).join(',') || 'keine'} | Blacklist: ${state.blacklist.join(',') || 'keine'}
+Lernregeln: ${state.feedbackHistory.join('; ') || 'keine'} | Bereits verplant: ${meals.map(m => m.title).join(', ') || 'nichts'}
 Slots: ${JSON.stringify(batch)}
 Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLeftover":false,"emoji":"🍝","cuisine":"Italienisch","title":"Titel","desc":"Kurzbeschreibung","prepTime":25,"kcal":550,"estimatedCost":6.5,"ingredients":[{"name":"Zutat","amount":"250 g","dept":"Obst & Gemüse"}],"steps":["Schritt 1","Schritt 2"]}]}`;
 
-            const { parsed, model } = await callGeminiSingleShot(prompt, 40000);
+            const { parsed, model } = await callGeminiSingleShot(prompt, 45000);
             usedModel = model;
-            if (!Array.isArray(parsed?.meals) || !parsed.meals.length) throw new Error(`Block ${i + 1} lieferte keine Mahlzeiten.`);
-
-            batch.forEach((slotCfg, idx) => {
-              const rawMeal = parsed.meals[idx] || parsed.meals.find(m => m.id === slotCfg.id) || parsed.meals[parsed.meals.length - 1];
-              const isLeft = slotCfg.mode === 'leftover' || !!rawMeal?.isLeftover;
-              meals.push({
-                ...rawMeal,
-                id: slotCfg.id,
-                day: slotCfg.day,
-                slot: slotCfg.slot,
-                isLeftover: isLeft,
-                estimatedCost: isLeft ? 0 : parsePrice(rawMeal?.estimatedCost) || 5.5,
-                ingredients: isLeft ? [] : (Array.isArray(rawMeal?.ingredients) ? rawMeal.ingredients : []),
-                steps: Array.isArray(rawMeal?.steps) && rawMeal.steps.length ? rawMeal.steps : ['Nach Wunsch zubereiten.']
-              });
-            });
+            if (!Array.isArray(parsed?.meals) || !parsed.meals.length) throw new Error(`Teil ${i + 1} lieferte keine Mahlzeiten.`);
+            meals.push(...parsed.meals);
           }
 
           state.plan = meals;
@@ -968,33 +918,9 @@ Schema: {"meals":[{"id":"Montag-dinner","day":"Montag","slot":"Abendessen","isLe
           attachMealImages();
           saveState();
           showDashboard('plan', `Live mit ${usedModel}`);
-          showToast(`✨ Wochenplan (${meals.length} Slots) mit ${usedModel} erstellt!`);
+          showToast(`✨ Wochenplan mit ${usedModel} erstellt!`);
         } catch (e) {
-          if (meals.length > 0) {
-            const filledIds = new Set(meals.map(m => m.id));
-            const missingSlots = activeSlots.filter(s => !filledIds.has(s.id));
-            const factor = Math.max(0.6, (p.adults * 1.0 + p.children * 0.6) / 2.0);
-            const fallbackPool = state.recipeLibrary.filter(r => !state.blacklist.some(b => b.toLowerCase() === r.title.toLowerCase()));
-
-            missingSlots.forEach((s, idx) => {
-              if (s.mode === 'leftover') {
-                const prev = meals[meals.length - 1]?.title || 'Vortagsgericht';
-                meals.push({ id: s.id, day: s.day, slot: s.slot, isLeftover: true, emoji: '🥡', cuisine: 'Resteverwertung', title: `Reste: ${prev.replace(/^Reste:\s*/, '')}`, desc: 'Reste vom Vortag.', prepTime: 10, kcal: 510, estimatedCost: 0, ingredients: [], steps: ['Schonend erwärmen.'] });
-              } else if (fallbackPool.length) {
-                const tpl = fallbackPool[idx % fallbackPool.length];
-                meals.push({ id: s.id, day: s.day, slot: s.slot, isLeftover: false, emoji: tpl.emoji || '🍽️', cuisine: tpl.cuisine || 'Bibliothek', title: tpl.title, desc: tpl.desc || tpl.title, prepTime: tpl.prepTime || 25, kcal: tpl.kcal || 540, estimatedCost: Math.round((tpl.baseCost || 6) * factor * 100) / 100, ingredients: tpl.ingredients.map(i => ({ ...i })), steps: [...tpl.steps] });
-              }
-            });
-
-            state.plan = meals;
-            state.checkedShopping = {};
-            attachMealImages();
-            saveState();
-            showDashboard('plan', 'Teilweise KI + Bibliothek');
-            showToast(`⚠️ Teil-Ausfall aufgefangen (${e.message}) – restliche Slots aus Bibliothek ergänzt.`);
-          } else {
-            showToast(`Fehler: ${e.message}`);
-          }
+          showToast(`Fehler: ${e.message}`);
         } finally {
           $('loading-overlay').classList.add('hidden');
         }
@@ -1275,7 +1201,6 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
         $('dash-budget-status').className = `text-xs font-semibold px-3 py-1 rounded-full ${spent <= budget ? 'bg-sage-100 text-sage-700' : 'bg-terracotta-100 text-terracotta-600'}`;
         $('dash-budget-status').textContent = spent <= budget ? `Im Budget (${formatEuro(budget - spent)} übrig)` : `${formatEuro(spent - budget)} über Budget`;
 
-        // Plan grid
         const grid = $('meal-plan-container');
         grid.innerHTML = '';
         if (!state.plan?.length) {
@@ -1321,7 +1246,6 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
           grid.querySelectorAll('[data-swap]').forEach(b => b.onclick = () => swapSingleMeal(b.dataset.swap));
         }
 
-        // Shopping
         $('shopping-markets-tags').innerHTML = (state.prefs.supermarkets || []).map(m => `<span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-lg bg-sage-100 text-sage-700">🏪 ${m}</span>`).join('');
         const rawIngs = [];
         (state.plan || []).forEach(m => { if (!m.isLeftover) (m.ingredients || []).forEach(i => rawIngs.push(i)); });
@@ -1347,7 +1271,6 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
           shopBox.appendChild(sec);
         });
 
-        // Library
         const q = ($('input-lib-search')?.value || '').trim().toLowerCase();
         const flt = $('select-lib-filter')?.value || 'all';
         const libItems = state.recipeLibrary.filter(r => (flt !== 'custom' || r.isCustom) && (flt === 'all' || flt === 'custom' || r.tags?.includes(flt)) && (!q || `${r.title} ${r.cuisine} ${(r.ingredients || []).map(i => i.name).join(' ')}`.toLowerCase().includes(q)));
@@ -1368,14 +1291,12 @@ Schema: {"emoji":"🍲","cuisine":"Mediterran","title":"Titel","desc":"Kurzbesch
           if (m) { Object.assign(m, { isLeftover: false, emoji: rec.emoji || '🍽️', cuisine: rec.cuisine || 'Bibliothek', title: rec.title, desc: rec.desc || rec.title, prepTime: rec.prepTime || 25, kcal: rec.kcal || 540, estimatedCost: Number(rec.baseCost) || 6, ingredients: rec.ingredients.map(i => ({ ...i })), steps: [...rec.steps] }); state.mealImages[rec.title] = generateFoodPhotoCanvas(m); saveState(); renderDashboardData(); showToast(`✅ „${rec.title}“ eingesetzt!`); }
         });
 
-        // Favorites & Blacklist
         $('favorites-list-container').innerHTML = state.favorites.length ? state.favorites.map((f, i) => `<div class="p-3.5 rounded-2xl bg-cream border border-stone-200 flex items-center justify-between gap-2"><div><div class="text-sm font-bold">${f.title}</div><div class="text-xs text-stone-500">${formatEuro(f.estimatedCost)} · ${f.prepTime} Min.</div></div><button type="button" data-rf="${i}" class="text-xs px-3 py-1.5 rounded-xl bg-white border">Entfernen</button></div>`).join('') : '<p class="text-xs text-stone-500">Noch keine Favoriten.</p>';
         $('favorites-list-container').querySelectorAll('[data-rf]').forEach(b => b.onclick = () => { state.favorites.splice(Number(b.dataset.rf), 1); saveState(); renderDashboardData(); updateCounts(); });
 
         $('blacklist-container').innerHTML = state.blacklist.length ? state.blacklist.map((x, i) => `<div class="p-3.5 rounded-2xl bg-red-50/50 border border-red-200 flex items-center justify-between gap-2"><span class="text-sm font-medium">${x}</span><button type="button" data-rb="${i}" class="text-xs px-3 py-1.5 rounded-xl bg-white border">Aufheben</button></div>`).join('') : '<p class="text-xs text-stone-500">Blacklist leer.</p>';
         $('blacklist-container').querySelectorAll('[data-rb]').forEach(b => b.onclick = () => { state.blacklist.splice(Number(b.dataset.rb), 1); saveState(); renderDashboardData(); updateCounts(); });
 
-        // Feedback rules
         $('feedback-history-list').innerHTML = state.feedbackHistory.length ? state.feedbackHistory.map((r, i) => `<div class="p-3 rounded-2xl bg-sage-50 border border-sage-200 flex items-center justify-between gap-2 text-xs"><span class="font-medium">✓ ${r}</span><button type="button" data-df="${i}" class="text-stone-400 hover:text-red-600 font-bold">✕</button></div>`).join('') : '<p class="text-xs text-stone-500">Keine Lernregeln gespeichert.</p>';
         $('feedback-history-list').querySelectorAll('[data-df]').forEach(b => b.onclick = () => { state.feedbackHistory.splice(Number(b.dataset.df), 1); saveState(); renderDashboardData(); updateCounts(); });
       }
